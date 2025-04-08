@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+      "allowJs": true,           // So it can handle JS files
+      "baseUrl": ".",
+      "paths": {
+        "~/*": ["./src/*"]
+      }
+    }
+}
+  

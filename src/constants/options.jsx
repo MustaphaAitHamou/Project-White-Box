@@ -1,44 +1,51 @@
 export const SelectTravelesList=[
     {
         id:1,
-        title: 'Just Me',
-        desc: 'A sole traveles in exploration',
-        icon: '+',
-        people:'1'
+        title: 'Seul',
+        desc: 'Voyageur seul en exploration',
+        icon: '✈️',
+        people:'1 Personne'
     },
     {
         id:2,
-        title: 'A Couple',
-        desc: 'Two traveles in tandem',
-        icon: '-',
-        people:'2 People'
+        title: 'À deux',
+        desc: 'Deux voyageurs en tandem',
+        icon: '🤜🏼🤛🏼',
+        people:'2 Personnes'
     },
     {
         id:3,
-        title: 'Family',
-        desc: 'A group on fun loving adv',
-        icon: '*',
-        people:'3'
+        title: 'En Famille',
+        desc: 'La famille, rien que la famille...',
+        icon: '🏡',
+        people:'3 à 5 Personnes'
+    }, 
+    {
+        id:4,
+        title: 'Entre amis',
+        desc: 'En groupe pour des sensations fortes',
+        icon: '🛥️',
+        people:'5 à 10 Personnes'
     }, 
 ]
 
 export const SelectBudgetOptions=[
     {
         id:1,
-        title:'Cheap',
-        desc:'Stay conscious of costs',
+        title:'Bon marché',
+        desc:'Restez conscient des coûts',
         icon:'🪙',
     },
     {
         id:2,
-        title:'Moderate',
-        desc:'Keep cost on the average side',
+        title:'Modéré',
+        desc:'Maintenir les coûts dans la moyenne',
         icon:'💸',
     },
     {
         id:3,
-        title:'Luxury',
-        desc:'Dont worry about cost',
+        title:'Luxe',
+        desc:'Ne vous inquiétez pas du coût',
         icon:'💰',
     },
 ]

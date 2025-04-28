@@ -5,14 +5,24 @@ import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { toast } from "sonner";
 import { chatSession } from "~/service/AIModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "~/components/ui/dialog";
+import { FcGoogle } from "react-icons/fc";
+import { useGoogleLogin } from "@react-oauth/google";
+import axios from "axios";
 
 function CreateTrip() {
   const [place, setPlace] = useState();
-
   const [formData, setFormData] = useState([]);
+  const [openDialog, setOpenDialog] = useState(false);
 
   const handleInputChange = (name, value) => {
-
     setFormData({
       ...formData,
       [name]: value,
@@ -23,26 +33,66 @@ function CreateTrip() {
     console.log(formData);
   }, [formData]);
 
-  const OnGenerateTrip=async()=>{
-    if(formData?.noOfDays>5&&formData?.location||!formData?.budget||!formData?.traveler)
-    {
-        toast("Veuillez rentrer toutes les informations")
-        return;
+  // Google login setup
+  const login = useGoogleLogin({
+    onSuccess: (codeResp) => {
+      console.log("Google login successful, token:", codeResp);
+
+      // Fetch the user profile using the access token
+      axios
+        .get(`https://www.googleapis.com/oauth2/v1/userinfo?access_token=${codeResp.access_token}`, {
+          headers: {
+            Authorization: `Bearer ${codeResp.access_token}`,
+            Accept: 'application/json',
+          },
+        })
+        .then((resp) => {
+          console.log("User profile:", resp.data);
+
+          // Store user profile in localStorage
+          localStorage.setItem('user', JSON.stringify(resp.data));
+
+          // Close the login dialog
+          setOpenDialog(false);
+
+          // Proceed with generating the trip after the login
+          OnGenerateTrip();
+        })
+        .catch((error) => {
+          console.error("Error fetching user profile:", error);
+        });
+    },
+    onError: (error) => {
+      console.log("Google login error:", error);
+    },
+  });
+
+  const OnGenerateTrip = async () => {
+    const user = localStorage.getItem('user');
+
+    if (!user) {
+      setOpenDialog(true);
+      return;
     }
 
-    const FINAL_PROMPT=AI_PROMPT
-    .replace('{location}', formData?.location?.label)
-    .replace('{totalDays}', formData?.noOfDays)
-    .replace('{traveler}', formData?.traveler)
-    .replace('{budget}', formData?.budget)
-    .replace('{totalDays}', formData?.noOfDays)
+    if (formData?.noOfDays > 5 && formData?.location || !formData?.budget || !formData?.traveler) {
+      toast("Veuillez rentrer toutes les informations");
+      return;
+    }
+
+    const FINAL_PROMPT = AI_PROMPT
+      .replace('{location}', formData?.location?.label)
+      .replace('{totalDays}', formData?.noOfDays)
+      .replace('{traveler}', formData?.traveler)
+      .replace('{budget}', formData?.budget)
+      .replace('{totalDays}', formData?.noOfDays);
 
     console.log(FINAL_PROMPT);
 
-    const result=await chatSession.sendMessage(FINAL_PROMPT);
+    const result = await chatSession.sendMessage(FINAL_PROMPT);
 
     console.log(result?.response?.text());
-  }
+  };
 
   return (
     <div className="sm:px-10 md:px-32 lg:px-56 xl:px-10 px-5 mt-10">
@@ -88,8 +138,8 @@ function CreateTrip() {
               key={index}
               onClick={() => handleInputChange("budget", item.title)}
               className={`p-4 border cursor-pointer rounded-lg hover:shadow-lg 
-              ${formData?.budget==item.title&&'shadow-lg border-black'}
-              `}>
+              ${formData?.budget == item.title && 'shadow-lg border-black'}`}
+            >
               <h2 className="text-4xl">{item.icon}</h2>
               <h2 className="font-bold text-lg">{item.title}</h2>
               <h2 className="text-sm text-gray-500">{item.desc}</h2>
@@ -106,8 +156,8 @@ function CreateTrip() {
               key={index}
               onClick={() => handleInputChange("traveler", item.people)}
               className={`p-4 border cursor-pointer rounded-lg hover:shadow-lg 
-              ${formData?.traveler==item.people&&'shadow-lg border-black'}
-              `}>
+              ${formData?.traveler == item.people && 'shadow-lg border-black'}`}
+            >
               <h2 className="text-4xl">{item.icon}</h2>
               <h2 className="font-bold text-lg">{item.title}</h2>
               <h2 className="text-sm text-gray-500">{item.desc}</h2>
@@ -119,6 +169,26 @@ function CreateTrip() {
       <div className="my-10 justify-end flex">
         <Button onClick={OnGenerateTrip}>Générer un voyage</Button>
       </div>
+
+      <Dialog open={openDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogDescription>
+              <img src="/logo.svg" />
+              <h2 className='font-bold text-lg'>Connectez-vous avec Google</h2>
+              <p>Connectez-vous de façon sécurisée à l'application avec Google Authentication</p>
+
+              <Button
+                onClick={login}
+                className="w-full mt-5 flex gap-4 items-center">
+                <FcGoogle className="h-7 w-7" />
+                Connectez-vous avec Google
+              </Button>
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

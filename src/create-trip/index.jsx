@@ -18,6 +18,7 @@ import { FcGoogle } from "react-icons/fc";
 import { useGoogleLogin } from "@react-oauth/google";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "~/service/firebaseConfig";
+import { useNavigate } from "react-router-dom";
 
 function CreateTrip() {
   const [place, setPlace] = useState();
@@ -27,6 +28,7 @@ function CreateTrip() {
 
   const [loading, setLoading] = useState(false);
 
+  const navigate=useNavigate();
   const handleInputChange = (name, value) => {
 
     setFormData({
@@ -86,6 +88,7 @@ function CreateTrip() {
       id:docId
     });
     setLoading(false);
+    navigate('/view-trip/'+docId)
   }
 
   const getUserProfile = (tokenInfo) => {
@@ -185,9 +188,8 @@ function CreateTrip() {
         disabled = {loading}
         onClick={OnGenerateTrip}>
           {loading?
-            <AiOutlineLoading3Quarters className="h-7 w-7 animate-spin"/>: 'Generate Trip'
+            <AiOutlineLoading3Quarters className="h-7 w-7 animate-spin"/>: 'Générer un voyage'
           }
-          Générer un voyage
         </Button>
       </div>
 

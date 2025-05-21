@@ -1,6 +1,6 @@
 // src/components/Header.jsx
-import React, { useEffect, useState } from 'react'
-import { Button } from '../ui/button'
+import React, { useEffect, useState } from "react";
+import { Button } from "../ui/button";
 import { useGoogleLogin } from "@react-oauth/google";
 import { FcGoogle } from "react-icons/fc";
 import axios from "axios";
@@ -9,8 +9,8 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { googleLogout } from '@react-oauth/google';
+} from "@/components/ui/popover";
+import { googleLogout } from "@react-oauth/google";
 import {
   Dialog,
   DialogContent,
@@ -20,19 +20,19 @@ import {
 } from "~/components/ui/dialog";
 
 export default function Header() {
-  const user = JSON.parse(localStorage.getItem('user'));
+  const user = JSON.parse(localStorage.getItem("user"));
   const [openDialog, setOpenDialog] = useState(false);
 
   useEffect(() => {
-    console.log(user)
-  }, [])
+    console.log(user);
+  }, []);
 
   const login = useGoogleLogin({
     onSuccess: getUserProfile,
-    onError: err => console.error("OAuth Error:", err),
+    onError: (err) => console.error("OAuth Error:", err),
     flow: "implicit",
     ux_mode: "popup",
-    scope: "openid email profile"
+    scope: "openid email profile",
   });
 
   async function getUserProfile(tokenResponse) {
@@ -42,8 +42,8 @@ export default function Header() {
         {
           headers: {
             Authorization: `Bearer ${tokenResponse.access_token}`,
-            Accept: "application/json"
-          }
+            Accept: "application/json",
+          },
         }
       );
       localStorage.setItem("user", JSON.stringify(resp.data));
@@ -56,14 +56,21 @@ export default function Header() {
   }
 
   return (
-    <div className='p-3 shadow-sm flex justify-between items-center px-5'>
-      <img src="/logo.svg" alt="Logo" />
-
+    <div className="p-3 shadow-sm flex justify-between items-center px-5">
+      <a href="/">
+        <img src="/logo.svg" alt="Logo" />
+      </a>
       <div>
         {user ? (
-          <div className='flex items-center gap-3'>
-            <a href='/my-trips'>
-              <Button variant="outline" className='rounded-full'>
+          <div className="flex items-center gap-3">
+            <a href="/create-trip">
+              <Button variant="outline" className="rounded-full">
+                + Planifier un voyage
+              </Button>
+            </a>
+
+            <a href="/my-trips">
+              <Button variant="outline" className="rounded-full">
                 Mes voyages
               </Button>
             </a>
@@ -75,13 +82,13 @@ export default function Header() {
                 <img
                   src={user.picture}
                   alt="Avatar"
-                  className='h-[35px] w-[35px] rounded-full object-cover cursor-pointer'
+                  className="h-[35px] w-[35px] rounded-full object-cover cursor-pointer"
                 />
               </PopoverTrigger>
 
               <PopoverContent>
                 <h2
-                  className='cursor-pointer'
+                  className="cursor-pointer"
                   onClick={() => {
                     googleLogout();
                     localStorage.clear();
@@ -94,9 +101,7 @@ export default function Header() {
             </Popover>
           </div>
         ) : (
-          <Button onClick={() => setOpenDialog(true)}>
-            Connectez-vous
-          </Button>
+          <Button onClick={() => setOpenDialog(true)}>Connectez-vous</Button>
         )}
       </div>
 
@@ -108,7 +113,8 @@ export default function Header() {
               Connectez-vous avec Google
             </DialogTitle>
             <DialogDescription>
-              Connectez-vous de façon sécurisée à l’application avec Google Authentication.
+              Connectez-vous de façon sécurisée à l’application avec Google
+              Authentication.
             </DialogDescription>
           </DialogHeader>
           <div className="mt-6">
@@ -123,5 +129,5 @@ export default function Header() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

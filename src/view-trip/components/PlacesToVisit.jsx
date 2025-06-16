@@ -1,4 +1,3 @@
-// PlacesToVisit.jsx
 import React from 'react'
 import PlaceCarditem from './PlaceCarditem'
 

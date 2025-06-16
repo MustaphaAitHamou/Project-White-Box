@@ -1,216 +1,207 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import GooglePlacesAutocomplete from "react-google-places-autocomplete";
-import { AI_PROMPT, SelectBudgetOptions, SelectTravelesList } from "~/constants/options";
-import { Input } from "~/components/ui/input";
-import { Button } from "~/components/ui/button";
-import { toast } from "sonner";
-import { chatSession } from "~/service/AIModal";
-import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
+import { AI_PROMPT, SelectBudgetOptions, SelectTravelesList } from '~/constants/options';
+import { Input } from '~/components/ui/input';
+import { Button } from '~/components/ui/button';
+import { toast } from 'sonner';
+import { chatSession } from '~/service/AIModal';
+import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "~/components/ui/dialog";
-import { FcGoogle } from "react-icons/fc";
-import { useGoogleLogin } from "@react-oauth/google";
-import { doc, setDoc } from "firebase/firestore";
-import { db } from "~/service/firebaseConfig";
-import { useNavigate } from "react-router-dom";
+  DialogDescription,
+} from '~/components/ui/dialog';
+import { FcGoogle } from 'react-icons/fc';
+import { useGoogleLogin } from '@react-oauth/google';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '~/service/firebaseConfig';
+import { useNavigate } from 'react-router-dom';
 
 export default function CreateTrip() {
-  const [place, setPlace] = useState();
+  const [place, setPlace] = useState(null);
   const [formData, setFormData] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Pour debug
   useEffect(() => {
-    console.log("formData:", formData);
+    console.log('formData:', formData);
   }, [formData]);
 
   const handleInputChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // --- Configuration Google OAuth en popup + implicit flow ---
   const login = useGoogleLogin({
-    onSuccess: getUserProfile,
-    onError: err => console.error("OAuth Error:", err),
-    flow: "implicit",
-    ux_mode: "popup",
-    scope: "openid email profile"
+    onSuccess: handleGoogleSuccess,
+    onError: () => toast.error("Échec de l'authentification Google"),
+    ux_mode: 'popup',
+    scope: 'openid email profile',
   });
 
-  // Récupère le profil Google, stocke et relance la génération
-  async function getUserProfile(tokenResponse) {
+  async function handleGoogleSuccess({ access_token }) {
     try {
-      const resp = await axios.get(
-        `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${tokenResponse.access_token}`,
-        {
-          headers: {
-            Authorization: `Bearer ${tokenResponse.access_token}`,
-            Accept: "application/json"
-          }
-        }
+      const { data } = await axios.get(
+        `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${access_token}`
       );
-      localStorage.setItem("user", JSON.stringify(resp.data));
+      localStorage.setItem('user', JSON.stringify(data));
       setOpenDialog(false);
-      // On relance la génération après s'être connecté
-      OnGenerateTrip();
+      generateTrip();
     } catch (err) {
-      console.error("Error fetching user profile:", err);
-      toast.error("Impossible de récupérer le profil Google");
+      console.error(err);
+      toast.error('Impossible de récupérer le profil Google');
     }
   }
 
-  // --- Génération du voyage via Gemini ---
-  const OnGenerateTrip = async () => {
-    const user = localStorage.getItem("user");
+  async function generateTrip() {
+    const user = localStorage.getItem('user');
     if (!user) {
       setOpenDialog(true);
       return;
     }
-    // Validation simple du formulaire
     if (!formData.location || !formData.noOfDays || !formData.budget || !formData.traveler) {
-      toast("Veuillez remplir toutes les informations");
+      toast.error('Veuillez remplir tous les champs');
       return;
     }
-
     setLoading(true);
-    const FINAL_PROMPT = AI_PROMPT
-      .replace("{location}", formData.location.label)
-      .replace("{totalDays}", formData.noOfDays)
-      .replace("{traveler}", formData.traveler)
-      .replace("{budget}", formData.budget);
+    const finalPrompt = AI_PROMPT
+      .replace('{location}', formData.location.label)
+      .replace('{totalDays}', formData.noOfDays)
+      .replace('{traveler}', formData.traveler)
+      .replace('{budget}', formData.budget);
 
     try {
-      const result = await chatSession.sendMessage(FINAL_PROMPT);
-      SaveAiTrip(result.response.text());
-    } catch (e) {
-      console.error(e);
-      toast.error("Erreur lors de la génération du voyage");
+      const result = await chatSession.sendMessage(finalPrompt);
+      const tripData = result.response.text();
+      const tripId = Date.now().toString();
+      await setDoc(doc(db, 'AITrips', tripId), {
+        userSelection: formData,
+        TripData: JSON.parse(tripData),
+        userEmail: JSON.parse(user).email,
+        id: tripId,
+      });
+      navigate(`/view-trip/${tripId}`);
+    } catch (error) {
+      console.error(error);
+      toast.error('Erreur lors de la génération du voyage');
+    } finally {
       setLoading(false);
     }
-  };
-
-  // Enregistre le voyage généré dans Firestore puis redirige
-  const SaveAiTrip = async (TripData) => {
-    setLoading(true);
-    const user = JSON.parse(localStorage.getItem("user"));
-    const docId = Date.now().toString();
-    await setDoc(doc(db, "AITrips", docId), {
-      userSelection: formData,
-      TripData: JSON.parse(TripData),
-      userEmail: user.email,
-      id: docId
-    });
-    setLoading(false);
-    navigate("/view-trip/" + docId);
-  };
+  }
 
   return (
-    <div className="sm:px-10 md:px-32 lg:px-56 xl:px-10 px-5 mt-10">
-      {/* Titre & description */}
-      <h2 className="font-bold text-3xl">Quelles sont vos préférences de voyage ?</h2>
-      <p className="mt-3 text-gray-500 text-xl">Précisez-nous quelques informations</p>
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Static gradient background matching Hero */}
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-500" />
 
-      {/* Destination */}
-      <div className="mt-10">
-        <h2 className="text-xl my-3 font-medium">Quelle est votre destination ?</h2>
-        <GooglePlacesAutocomplete
-          apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
-          selectProps={{
-            place,
-            onChange: v => {
-              setPlace(v);
-              handleInputChange("location", v);
-            }
-          }}
-        />
-      </div>
+      <section className="relative py-12 px-4 sm:px-10 md:px-32 lg:px-56 xl:px-72">
+        <div className="max-w-4xl mx-auto bg-white bg-opacity-90 backdrop-blur-md p-8 rounded-2xl shadow-2xl">
+          <h2 className="text-3xl font-bold text-gray-800">Préférences de voyage</h2>
+          <p className="mt-2 text-gray-600">Dites-nous où et comment vous souhaitez voyager.</p>
 
-      {/* Nombre de jours */}
-      <div className="mt-10">
-        <h2 className="text-xl my-3 font-medium">Pour combien de jours ?</h2>
-        <Input
-          placeholder="Ex. 3"
-          type="number"
-          onChange={e => handleInputChange("noOfDays", e.target.value)}
-        />
-      </div>
+          {/* Destination */}
+          <div className="mt-8">
+            <label className="block text-lg font-medium text-gray-700">Destination</label>
+            <GooglePlacesAutocomplete
+              apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
+              selectProps={{
+                place,
+                onChange: v => {
+                  setPlace(v);
+                  handleInputChange('location', v);
+                },
+                className: 'mt-2 rounded-lg border-gray-300'
+              }}
+            />
+          </div>
 
-      {/* Budget */}
-      <div className="mt-10">
-        <h2 className="text-xl my-3 font-medium">Quel est votre budget ?</h2>
-        <div className="grid grid-cols-3 gap-5 mt-5">
-          {SelectBudgetOptions.map((item, idx) => (
-            <div
-              key={idx}
-              onClick={() => handleInputChange("budget", item.title)}
-              className={`p-4 border cursor-pointer rounded-lg hover:shadow-lg ${
-                formData.budget === item.title && "shadow-lg border-black"
-              }`}
-            >
-              <div className="text-4xl">{item.icon}</div>
-              <div className="font-bold text-lg">{item.title}</div>
-              <p className="text-sm text-gray-500">{item.desc}</p>
+          {/* Nombre de jours */}
+          <div className="mt-8">
+            <label className="block text-lg font-medium text-gray-700">Nombre de jours</label>
+            <Input
+              type="number"
+              placeholder="Ex. 5"
+              className="mt-2 w-32 rounded-lg border-gray-300"
+              onChange={e => handleInputChange('noOfDays', e.target.value)}
+            />
+          </div>
+
+          {/* Budget */}
+          <div className="mt-8">
+            <label className="block text-lg font-medium text-gray-700">Budget</label>
+            <div className="grid grid-cols-3 gap-4 mt-3">
+              {SelectBudgetOptions.map((opt, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleInputChange('budget', opt.title)}
+                  className={`cursor-pointer p-4 rounded-lg transition-transform transform hover:-translate-y-1 ${
+                    formData.budget === opt.title
+                      ? 'bg-indigo-600 text-white shadow-md scale-105'
+                      : 'bg-gray-100 border border-gray-200'
+                  }`}
+                >
+                  <p className="text-2xl mb-2">{opt.icon}</p>
+                  <p className="font-semibold text-gray-800">{opt.title}</p>
+                  <p className="text-sm text-gray-500">{opt.desc}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* Nombre de voyageurs */}
-      <div className="mt-10">
-        <h2 className="text-xl my-3 font-medium">À combien voyagez-vous ?</h2>
-        <div className="grid grid-cols-3 gap-5 mt-5">
-          {SelectTravelesList.map((item, idx) => (
-            <div
-              key={idx}
-              onClick={() => handleInputChange("traveler", item.people)}
-              className={`p-4 border cursor-pointer rounded-lg hover:shadow-lg ${
-                formData.traveler === item.people && "shadow-lg border-black"
-              }`}
-            >
-              <div className="text-4xl">{item.icon}</div>
-              <div className="font-bold text-lg">{item.title}</div>
-              <p className="text-sm text-gray-500">{item.desc}</p>
+          {/* Nombre de voyageurs */}
+          <div className="mt-8">
+            <label className="block text-lg font-medium text-gray-700">Nombre de voyageurs</label>
+            <div className="grid grid-cols-3 gap-4 mt-3">
+              {SelectTravelesList.map((opt, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleInputChange('traveler', opt.people)}
+                  className={`cursor-pointer p-4 rounded-lg transition-transform transform hover:-translate-y-1 ${
+                    formData.traveler === opt.people
+                      ? 'bg-indigo-600 text-white shadow-md scale-105'
+                      : 'bg-gray-100 border border-gray-200'
+                  }`}
+                >
+                  <p className="text-2xl mb-2">{opt.icon}</p>
+                  <p className="font-semibold text-gray-800">{opt.title}</p>
+                  <p className="text-sm text-gray-500">{opt.desc}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* Bouton Générer */}
-      <div className="my-10 flex justify-end">
-        <Button disabled={loading} onClick={OnGenerateTrip}>
-          {loading
-            ? <AiOutlineLoading3Quarters className="h-7 w-7 animate-spin" />
-            : "Générer un voyage"}
-        </Button>
-      </div>
+          {/* Bouton Générer */}
+          <div className="mt-10 flex justify-end">
+            <Button
+              onClick={generateTrip}
+              disabled={loading}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-3"
+            >
+              {loading ? <AiOutlineLoading3Quarters className="animate-spin h-6 w-6" /> : 'Générer'}
+            </Button>
+          </div>
+        </div>
+      </section>
 
       {/* Dialog Google Login */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent>
-          <DialogHeader className="text-center">
-            <DialogTitle className="flex flex-col items-center gap-4">
-              <img src="/logo.svg" alt="Logo" className="mx-auto" />
-              Connectez-vous avec Google
-            </DialogTitle>
-            <DialogDescription>
-              Connectez-vous de façon sécurisée à l’application avec Google Authentication.
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl font-bold">Connexion Google</DialogTitle>
+            <DialogDescription className="text-center text-gray-600">
+              Connectez-vous pour lancer la génération.
             </DialogDescription>
           </DialogHeader>
           <div className="mt-6">
             <Button
               onClick={() => login()}
-              className="w-full flex gap-4 justify-center items-center"
+              className="w-full flex items-center justify-center gap-2"
             >
-              <FcGoogle className="h-7 w-7" />
-              Connectez-vous avec Google
+              <FcGoogle className="h-6 w-6" />
+              Continuer avec Google
             </Button>
           </div>
         </DialogContent>

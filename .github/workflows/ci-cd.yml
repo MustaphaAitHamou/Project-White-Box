@@ -48,63 +48,65 @@ jobs:
       - name: Build Docker image
         run: docker build -t my-app:${{ github.sha }} .
 
-  deploy-staging:
-    needs: package
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - name: Install ArgoCD CLI
-        run: |
-          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-          chmod +x argocd
-          sudo mv argocd /usr/local/bin/argocd
+  # 🚫 Déploiement désactivé temporairement jusqu'à hébergement d'ArgoCD
 
-      - name: Login to ArgoCD
-        run: |
-          argocd login "$ARGOCD_SERVER" \
-            --username "$ARGOCD_USERNAME" \
-            --password "$ARGOCD_PASSWORD" \
-            --insecure
-        env:
-          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-          ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
-          ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+  # deploy-staging:
+  #   needs: package
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
+  #   steps:
+  #     - name: Install ArgoCD CLI
+  #       run: |
+  #         curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+  #         chmod +x argocd
+  #         sudo mv argocd /usr/local/bin/argocd
 
-      - name: Deploy to Staging
-        run: |
-          argocd app sync my-app-staging
-          argocd app wait my-app-staging
+  #     - name: Login to ArgoCD
+  #       run: |
+  #         argocd login "$ARGOCD_SERVER" \
+  #           --username "$ARGOCD_USERNAME" \
+  #           --password "$ARGOCD_PASSWORD" \
+  #           --insecure
+  #       env:
+  #         ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+  #         ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
+  #         ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
 
-  smoke-test:
-    needs: deploy-staging
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run smoke tests
-        run: npm run smoke
+  #     - name: Deploy to Staging
+  #       run: |
+  #         argocd app sync my-app-staging
+  #         argocd app wait my-app-staging
 
-  deploy-prod:
-    needs: smoke-test
-    runs-on: ubuntu-latest
-    if: github.event.inputs.deploy-to-prod == 'yes'
-    steps:
-      - name: Install ArgoCD CLI
-        run: |
-          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-          chmod +x argocd
-          sudo mv argocd /usr/local/bin/argocd
+  # smoke-test:
+  #   needs: deploy-staging
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Run smoke tests
+  #       run: npm run smoke
 
-      - name: Login to ArgoCD
-        run: |
-          argocd login "$ARGOCD_SERVER" \
-            --username "$ARGOCD_USERNAME" \
-            --password "$ARGOCD_PASSWORD" \
-            --insecure
-        env:
-          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-          ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
-          ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+  # deploy-prod:
+  #   needs: smoke-test
+  #   runs-on: ubuntu-latest
+  #   if: github.event.inputs.deploy-to-prod == 'yes'
+  #   steps:
+  #     - name: Install ArgoCD CLI
+  #       run: |
+  #         curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+  #         chmod +x argocd
+  #         sudo mv argocd /usr/local/bin/argocd
 
-      - name: Deploy to Production
-        run: |
-          argocd app sync my-app-prod
-          argocd app wait my-app-prod
+  #     - name: Login to ArgoCD
+  #       run: |
+  #         argocd login "$ARGOCD_SERVER" \
+  #           --username "$ARGOCD_USERNAME" \
+  #           --password "$ARGOCD_PASSWORD" \
+  #           --insecure
+  #       env:
+  #         ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+  #         ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
+  #         ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+
+  #     - name: Deploy to Production
+  #       run: |
+  #         argocd app sync my-app-prod
+  #         argocd app wait my-app-prod

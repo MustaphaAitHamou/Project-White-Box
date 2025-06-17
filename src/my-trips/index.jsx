@@ -10,6 +10,7 @@ export default function MyTrips() {
 
   useEffect(() => {
     loadUserTrips();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadUserTrips = async () => {

@@ -15,6 +15,7 @@ export default function ViewTrip() {
 
   useEffect(() => {
     if (tripId) fetchTrip();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId]);
 
   const fetchTrip = async () => {

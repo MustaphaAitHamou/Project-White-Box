@@ -1,8 +1,11 @@
+/* eslint-env jest */
+/* global describe, it, expect */
+
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
-import App from 'App.jsx';        // résolu en src/App.jsx
+import App from 'App.jsx'; // résolu en src/App.jsx
 
 describe('App', () => {
   it('affiche le titre principal', () => {

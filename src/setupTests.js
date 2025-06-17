@@ -1,9 +1,7 @@
 // src/setupTests.js
 
-// 1) jest-dom pour toHaveTextContent(), toBeInTheDocument(), etc.
-require('@testing-library/jest-dom');
+import '@testing-library/jest-dom';
+import { TextEncoder, TextDecoder } from 'util';
 
-// 2) polyfill TextEncoder/TextDecoder pour React Router
-const { TextEncoder, TextDecoder } = require('util');
-if (!global.TextEncoder) global.TextEncoder = TextEncoder;
-if (!global.TextDecoder) global.TextDecoder = TextDecoder;
+if (!globalThis.TextEncoder) globalThis.TextEncoder = TextEncoder;
+if (!globalThis.TextDecoder) globalThis.TextDecoder = TextDecoder;

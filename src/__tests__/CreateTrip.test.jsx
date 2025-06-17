@@ -1,3 +1,6 @@
+/* eslint-env jest */
+/* global jest, describe, it, expect */
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -9,18 +12,15 @@ jest.mock('~/service/GlobalApi', () => ({
 }));
 
 jest.mock('react-google-places-autocomplete', () => ({
-    __esModule: true,
-    default: ({ onChange }) => (
-      <input
-        aria-label="Destination"
-        placeholder="Destination"
-        onChange={(e) => onChange?.({ label: e.target.value })}
-      />
-    )
-  }));
-  
-
-
+  __esModule: true,
+  default: ({ onChange }) => (
+    <input
+      aria-label="Destination"
+      placeholder="Destination"
+      onChange={(e) => onChange?.({ label: e.target.value })}
+    />
+  )
+}));
 
 describe('CreateTrip', () => {
   it('soumet le formulaire avec les bonnes valeurs', async () => {

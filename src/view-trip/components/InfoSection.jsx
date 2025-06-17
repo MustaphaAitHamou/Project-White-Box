@@ -1,6 +1,5 @@
 // src/components/InfoSection.jsx
 import React, { useEffect, useState } from "react";
-import axios from "axios"; // ajoute axios pour ta deuxième requête
 import { Button } from "~/components/ui/button";
 import { IoIosSend } from "react-icons/io";
 import { GetPlaceDetails } from "~/service/GlobalApi";

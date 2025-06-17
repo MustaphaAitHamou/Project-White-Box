@@ -1,4 +1,5 @@
-// src/__tests__/services/GlobalApi.test.js
+/* eslint-env jest */
+/* global describe, it, expect, jest, beforeEach */
 
 import axios from 'axios';
 import { GetPlaceDetails } from '../../service/GlobalApi';
@@ -29,9 +30,9 @@ describe('GlobalApi', () => {
       expect.objectContaining({
         headers: expect.objectContaining({
           'Content-Type': 'application/json',
-          'X-Goog-Api-Key': undefined, // <-- on accepte ici undefined
-          'X-Goog-FieldMask': expect.stringContaining('places.')
-        })
+          'X-Goog-Api-Key': undefined,
+          'X-Goog-FieldMask': expect.stringContaining('places.'),
+        }),
       })
     );
 

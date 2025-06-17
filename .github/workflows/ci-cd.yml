@@ -48,30 +48,7 @@ jobs:
       - name: Build Docker image
         run: docker build -t my-app:${{ github.sha }} .
 
-deploy-staging:
-  needs: package
-  runs-on: ubuntu-latest
-  if: github.ref == 'refs/heads/main'
-  steps:
-    - name: Install ArgoCD CLI
-      run: |
-        curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-        chmod +x argocd
-        sudo mv argocd /usr/local/bin/argocd
-
-    - name: Login to ArgoCD
-      run: |
-        argocd login $ARGOCD_SERVER \
-          --username "$ARGOCD_USERNAME" \
-          --password "$ARGOCD_PASSWORD" \
-          --insecure
-      env:
-        ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-        ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
-        ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
-
-    - name: Deploy to Staging
-      run: argocd app sync my-app-staging
+  deploy-staging:
     needs: package
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -84,9 +61,9 @@ deploy-staging:
 
       - name: Login to ArgoCD
         run: |
-          argocd login $ARGOCD_SERVER \
-            --username $ARGOCD_USERNAME \
-            --password $ARGOCD_PASSWORD \
+          argocd login "$ARGOCD_SERVER" \
+            --username "$ARGOCD_USERNAME" \
+            --password "$ARGOCD_PASSWORD" \
             --insecure
         env:
           ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
@@ -94,7 +71,9 @@ deploy-staging:
           ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
 
       - name: Deploy to Staging
-        run: argocd app sync my-app-staging
+        run: |
+          argocd app sync my-app-staging
+          argocd app wait my-app-staging
 
   smoke-test:
     needs: deploy-staging
@@ -116,9 +95,9 @@ deploy-staging:
 
       - name: Login to ArgoCD
         run: |
-          argocd login $ARGOCD_SERVER \
-            --username $ARGOCD_USERNAME \
-            --password $ARGOCD_PASSWORD \
+          argocd login "$ARGOCD_SERVER" \
+            --username "$ARGOCD_USERNAME" \
+            --password "$ARGOCD_PASSWORD" \
             --insecure
         env:
           ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
@@ -126,4 +105,6 @@ deploy-staging:
           ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
 
       - name: Deploy to Production
-        run: argocd app sync my-app-prod
+        run: |
+          argocd app sync my-app-prod
+          argocd app wait my-app-prod

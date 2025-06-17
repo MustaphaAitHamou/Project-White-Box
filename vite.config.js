@@ -1,23 +1,22 @@
-import path from "path";
-import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+// vite.config.js
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
     alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "~": path.resolve(__dirname, "./src"),
+      '@': path.resolve(__dirname, 'src'),
+      '~': path.resolve(__dirname, 'src'),
     },
   },
-  optimizeDeps: {
-    include: ["react-router-dom"],
-  },
-  server: {
-    // Désactive COOP et COEP en dev pour permettre à la popup OAuth de se fermer
-    headers: {
-      "Cross-Origin-Opener-Policy": "unsafe-none",
-      "Cross-Origin-Embedder-Policy": "unsafe-none",
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/setupTests.js'],
+    transformMode: {
+      web: [/\.[jt]sx$/],
     },
   },
-});
+})

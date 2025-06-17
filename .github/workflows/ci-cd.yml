@@ -26,7 +26,7 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-    lint:
+  lint:  # <-- ici c'est un nouveau job au même niveau que build/test
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -37,7 +37,6 @@ jobs:
         run: npm install --save-dev eslint
       - name: Run Lint
         run: npm run lint
-
 
   package:
     needs: lint

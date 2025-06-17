@@ -26,13 +26,18 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-  lint:
+    lint:
     needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Lint
+      - name: Install dependencies
+        run: npm ci
+      - name: Install ESLint
+        run: npm install --save-dev eslint
+      - name: Run Lint
         run: npm run lint
+
 
   package:
     needs: lint

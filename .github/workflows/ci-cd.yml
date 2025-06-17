@@ -26,7 +26,7 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-  lint:  # <-- ici c'est un nouveau job au même niveau que build/test
+  lint:
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -51,6 +51,12 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x argocd
+          sudo mv argocd /usr/local/bin/argocd
+
       - name: Deploy to Staging
         run: argocd app sync my-app-staging
 
@@ -66,5 +72,11 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.inputs.deploy-to-prod == 'yes'
     steps:
-      - name: Deploy to Prod
-        run: argocd a
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x argocd
+          sudo mv argocd /usr/local/bin/argocd
+
+      - name: Deploy to Production
+        run: argocd app sync my-app-prod

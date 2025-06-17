@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { AI_PROMPT, SelectBudgetOptions, SelectTravelesList } from '~/constants/options';
@@ -25,11 +25,9 @@ export default function CreateTrip() {
   const [formData, setFormData] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [consentError, setConsentError] = useState('');
   const navigate = useNavigate();
-
-  useEffect(() => {
-    console.log('formData:', formData);
-  }, [formData]);
 
   const handleInputChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -48,6 +46,11 @@ export default function CreateTrip() {
         `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${access_token}`
       );
       localStorage.setItem('user', JSON.stringify(data));
+      await setDoc(doc(db, 'consents', data.id), {
+        email: data.email,
+        consent: true,
+        timestamp: new Date().toISOString(),
+      });
       setOpenDialog(false);
       generateTrip();
     } catch (err) {
@@ -66,6 +69,7 @@ export default function CreateTrip() {
       toast.error('Veuillez remplir tous les champs');
       return;
     }
+
     setLoading(true);
     const finalPrompt = AI_PROMPT
       .replace('{location}', formData.location.label)
@@ -94,11 +98,12 @@ export default function CreateTrip() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Static gradient background matching Hero */}
+      {/* Fond dégradé plein écran */}
       <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-500" />
 
-      <section className="relative py-12 px-4 sm:px-10 md:px-32 lg:px-56 xl:px-72">
-        <div className="max-w-4xl mx-auto bg-white bg-opacity-90 backdrop-blur-md p-8 rounded-2xl shadow-2xl">
+      {/* Formulaire principal */}
+      <section className="relative py-12 px-4 sm:px-10 md:px-32 lg:px-56 xl:px-72 z-10">
+        <div className="max-w-4xl mx-auto bg-white bg-opacity-90 backdrop-blur-lg p-8 rounded-2xl shadow-2xl">
           <h2 className="text-3xl font-bold text-gray-800">Préférences de voyage</h2>
           <p className="mt-2 text-gray-600">Dites-nous où et comment vous souhaitez voyager.</p>
 
@@ -180,30 +185,64 @@ export default function CreateTrip() {
               disabled={loading}
               className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-3"
             >
-              {loading ? <AiOutlineLoading3Quarters className="animate-spin h-6 w-6" /> : 'Générer'}
+              {loading ? (
+                <AiOutlineLoading3Quarters className="animate-spin h-6 w-6" />
+              ) : (
+                'Générer'
+              )}
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Dialog Google Login */}
+      {/* Dialog Connexion + RGPD */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-center text-xl font-bold">Connexion Google</DialogTitle>
             <DialogDescription className="text-center text-gray-600">
-              Connectez-vous pour lancer la génération.
+              Connectez-vous pour générer votre voyage personnalisé.
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-6">
-            <Button
-              onClick={() => login()}
-              className="w-full flex items-center justify-center gap-2"
-            >
-              <FcGoogle className="h-6 w-6" />
-              Continuer avec Google
-            </Button>
+
+          {/* Consentement RGPD */}
+          <div className="mt-4 flex items-start gap-2">
+            <input
+              type="checkbox"
+              id="rgpd"
+              checked={consentChecked}
+              onChange={(e) => {
+                setConsentChecked(e.target.checked);
+                setConsentError('');
+              }}
+              className="mt-1"
+            />
+            <label htmlFor="rgpd" className="text-sm text-gray-700">
+              J'accepte la{' '}
+              <a href="/confidentialite" target="_blank" className="text-indigo-600 underline">
+                politique de confidentialité
+              </a>
+              .
+            </label>
           </div>
+
+          {consentError && (
+            <p className="text-sm text-red-500 mt-1">{consentError}</p>
+          )}
+
+          <Button
+            onClick={() => {
+              if (!consentChecked) {
+                setConsentError("Vous devez accepter les conditions pour continuer.");
+                return;
+              }
+              login();
+            }}
+            className="w-full mt-5 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-500 text-white"
+          >
+            <FcGoogle className="h-6 w-6" />
+            Continuer avec Google
+          </Button>
         </DialogContent>
       </Dialog>
     </div>

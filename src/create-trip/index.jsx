@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { AI_PROMPT, SelectBudgetOptions, SelectTravelesList } from '~/constants/options';
 import { Input } from '~/components/ui/input';
 import { Button } from '~/components/ui/button';
@@ -27,6 +28,7 @@ export default function CreateTrip() {
   const [loading, setLoading] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentError, setConsentError] = useState('');
+  const [recaptchaValue, setRecaptchaValue] = useState(null);
   const navigate = useNavigate();
 
   const handleInputChange = (name, value) => {
@@ -69,7 +71,6 @@ export default function CreateTrip() {
       toast.error('Veuillez remplir tous les champs');
       return;
     }
-
     setLoading(true);
     const finalPrompt = AI_PROMPT
       .replace('{location}', formData.location.label)
@@ -98,16 +99,12 @@ export default function CreateTrip() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Fond dégradé plein écran */}
       <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-500" />
-
-      {/* Formulaire principal */}
-      <section className="relative py-12 px-4 sm:px-10 md:px-32 lg:px-56 xl:px-72 z-10">
-        <div className="max-w-4xl mx-auto bg-white bg-opacity-90 backdrop-blur-lg p-8 rounded-2xl shadow-2xl">
+      <section className="relative py-12 px-4 sm:px-10 md:px-32 lg:px-56 xl:px-72">
+        <div className="max-w-4xl mx-auto bg-white bg-opacity-90 backdrop-blur-md p-8 rounded-2xl shadow-2xl">
           <h2 className="text-3xl font-bold text-gray-800">Préférences de voyage</h2>
           <p className="mt-2 text-gray-600">Dites-nous où et comment vous souhaitez voyager.</p>
 
-          {/* Destination */}
           <div className="mt-8">
             <label className="block text-lg font-medium text-gray-700">Destination</label>
             <GooglePlacesAutocomplete
@@ -123,7 +120,6 @@ export default function CreateTrip() {
             />
           </div>
 
-          {/* Nombre de jours */}
           <div className="mt-8">
             <label className="block text-lg font-medium text-gray-700">Nombre de jours</label>
             <Input
@@ -134,7 +130,6 @@ export default function CreateTrip() {
             />
           </div>
 
-          {/* Budget */}
           <div className="mt-8">
             <label className="block text-lg font-medium text-gray-700">Budget</label>
             <div className="grid grid-cols-3 gap-4 mt-3">
@@ -156,7 +151,6 @@ export default function CreateTrip() {
             </div>
           </div>
 
-          {/* Nombre de voyageurs */}
           <div className="mt-8">
             <label className="block text-lg font-medium text-gray-700">Nombre de voyageurs</label>
             <div className="grid grid-cols-3 gap-4 mt-3">
@@ -178,38 +172,32 @@ export default function CreateTrip() {
             </div>
           </div>
 
-          {/* Bouton Générer */}
           <div className="mt-10 flex justify-end">
             <Button
               onClick={generateTrip}
               disabled={loading}
               className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-3"
             >
-              {loading ? (
-                <AiOutlineLoading3Quarters className="animate-spin h-6 w-6" />
-              ) : (
-                'Générer'
-              )}
+              {loading ? <AiOutlineLoading3Quarters className="animate-spin h-6 w-6" /> : 'Générer'}
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Dialog Connexion + RGPD */}
+      {/* Dialog Connexion avec RGPD + reCAPTCHA */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-center text-xl font-bold">Connexion Google</DialogTitle>
             <DialogDescription className="text-center text-gray-600">
-              Connectez-vous pour générer votre voyage personnalisé.
+              Connectez-vous pour lancer la génération.
             </DialogDescription>
           </DialogHeader>
 
-          {/* Consentement RGPD */}
           <div className="mt-4 flex items-start gap-2">
             <input
               type="checkbox"
-              id="rgpd"
+              id="rgpd-consent"
               checked={consentChecked}
               onChange={(e) => {
                 setConsentChecked(e.target.checked);
@@ -217,23 +205,30 @@ export default function CreateTrip() {
               }}
               className="mt-1"
             />
-            <label htmlFor="rgpd" className="text-sm text-gray-700">
-              J'accepte la{' '}
-              <a href="/confidentialite" target="_blank" className="text-indigo-600 underline">
-                politique de confidentialité
-              </a>
-              .
+            <label htmlFor="rgpd-consent" className="text-sm text-gray-700">
+              J'accepte que mes données soient utilisées pour la création de voyages personnalisés par TripGenius conformément à la politique de confidentialité.
             </label>
           </div>
 
           {consentError && (
-            <p className="text-sm text-red-500 mt-1">{consentError}</p>
+            <p className="text-red-500 text-sm mt-2">{consentError}</p>
           )}
+
+          <div className="mt-4">
+            <ReCAPTCHA
+              sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+              onChange={value => setRecaptchaValue(value)}
+            />
+          </div>
 
           <Button
             onClick={() => {
               if (!consentChecked) {
                 setConsentError("Vous devez accepter les conditions pour continuer.");
+                return;
+              }
+              if (!recaptchaValue) {
+                toast.error("Veuillez valider le reCAPTCHA");
                 return;
               }
               login();

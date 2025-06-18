@@ -12,15 +12,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '~/service/firebaseConfig';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 export default function Header() {
   const storedUser = localStorage.getItem('user');
   const user = storedUser ? JSON.parse(storedUser) : null;
+
   const [openDialog, setOpenDialog] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentError, setConsentError] = useState('');
+  const [recaptchaValue, setRecaptchaValue] = useState(null);
 
   useEffect(() => {
     console.log('User:', user);
@@ -40,11 +41,6 @@ export default function Header() {
       );
       localStorage.setItem('user', JSON.stringify(data));
       setOpenDialog(false);
-      await setDoc(doc(db, 'consents', data.id), {
-        email: data.email,
-        consent: true,
-        timestamp: new Date().toISOString(),
-      });
       window.location.reload();
     } catch (err) {
       console.error(err);
@@ -53,40 +49,38 @@ export default function Header() {
   }
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50 bg-white/70 backdrop-blur shadow-md">
+    <header className="bg-white shadow-md fixed top-0 inset-x-0 z-50">
       <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-        {/* Logo + Nom */}
-        <a href="/" className="flex items-center space-x-3">
-          <img src="/logo.svg" alt="Logo TripGenius" className="h-10 w-auto" />
-          <span className="text-xl font-extrabold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text">
-            TripGenius
-          </span>
+        {/* Logo et titre */}
+        <a href="/" className="flex items-center space-x-2">
+          <img src="/logo.svg" alt="Logo" className="h-8 w-auto" />
+          <span className="text-xl font-bold text-indigo-600">TripGenius</span>
         </a>
 
-        {/* Navigation Desktop */}
-        <nav className="hidden md:flex items-center space-x-6 font-medium text-gray-700">
-          <a href="/create-trip" className="hover:text-indigo-600 transition">
-            Planifier
+        {/* Navigation */}
+        <nav className="hidden md:flex items-center space-x-6">
+          <a href="/create-trip" className="text-gray-700 hover:text-indigo-600 transition">
+            Planifier un voyage
           </a>
-          <a href="/my-trips" className="hover:text-indigo-600 transition">
+          <a href="/my-trips" className="text-gray-700 hover:text-indigo-600 transition">
             Mes voyages
           </a>
         </nav>
 
-        {/* Connexion ou Avatar */}
+        {/* Connexion utilisateur */}
         <div className="flex items-center space-x-4">
           {user ? (
             <Popover>
               <PopoverTrigger asChild>
                 <img
                   src={user.picture}
-                  alt="Profil"
-                  className="h-10 w-10 rounded-full border-2 border-indigo-500 cursor-pointer"
+                  alt="Avatar"
+                  className="h-10 w-10 rounded-full cursor-pointer"
                 />
               </PopoverTrigger>
               <PopoverContent align="end" className="p-2">
                 <button
-                  className="text-sm w-full text-left text-gray-700 hover:text-red-500"
+                  className="w-full text-left text-gray-700 hover:text-red-500"
                   onClick={() => {
                     googleLogout();
                     localStorage.clear();
@@ -98,25 +92,23 @@ export default function Header() {
               </PopoverContent>
             </Popover>
           ) : (
-            <Button
-              onClick={() => setOpenDialog(true)}
-              className="bg-gradient-to-r from-purple-600 to-blue-500 text-white"
-            >
+            <Button onClick={() => setOpenDialog(true)}>
               Se connecter
             </Button>
           )}
         </div>
       </div>
 
-      {/* Dialog de Connexion */}
+      {/* Dialog Connexion */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-center font-bold text-2xl text-gray-800">
-              Connexion sécurisée
+            <DialogTitle className="flex flex-col items-center gap-3">
+              <img src="/logo.svg" alt="Logo" className="h-12" />
+              Connexion Google
             </DialogTitle>
-            <DialogDescription className="text-center text-gray-500">
-              Connectez-vous avec votre compte Google pour utiliser TripGenius.
+            <DialogDescription className="text-center text-gray-600">
+              Authentifiez-vous en toute sécurité pour commencer votre aventure.
             </DialogDescription>
           </DialogHeader>
 
@@ -124,7 +116,7 @@ export default function Header() {
           <div className="mt-4 flex items-start gap-2">
             <input
               type="checkbox"
-              id="rgpd"
+              id="rgpd-consent"
               checked={consentChecked}
               onChange={(e) => {
                 setConsentChecked(e.target.checked);
@@ -132,26 +124,37 @@ export default function Header() {
               }}
               className="mt-1"
             />
-            <label htmlFor="rgpd" className="text-sm text-gray-700">
-              J'accepte l'utilisation de mes données personnelles conformément à la{' '}
-              <a href="/confidentialite" target="_blank" className="underline text-indigo-600">
-                politique de confidentialité
-              </a>
-              .
+            <label htmlFor="rgpd-consent" className="text-sm text-gray-700">
+              J'accepte que mes données soient utilisées par TripGenius conformément à la politique de confidentialité.
             </label>
           </div>
 
-          {consentError && <p className="text-sm text-red-500 mt-1">{consentError}</p>}
+          {consentError && (
+            <p className="text-red-500 text-sm mt-2">{consentError}</p>
+          )}
 
+          {/* CAPTCHA */}
+          <div className="mt-4">
+            <ReCAPTCHA
+              sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+              onChange={(value) => setRecaptchaValue(value)}
+            />
+          </div>
+
+          {/* Bouton de connexion explicite */}
           <Button
+            className="mt-5 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-500 text-white"
             onClick={() => {
               if (!consentChecked) {
-                setConsentError("Veuillez accepter la politique de confidentialité.");
+                setConsentError("Vous devez accepter les conditions pour continuer.");
+                return;
+              }
+              if (!recaptchaValue) {
+                toast.error("Veuillez valider le reCAPTCHA.");
                 return;
               }
               login();
             }}
-            className="w-full mt-5 flex items-center justify-center gap-3 bg-gradient-to-r from-purple-600 to-blue-500 text-white"
           >
             <FcGoogle className="h-6 w-6" />
             Continuer avec Google

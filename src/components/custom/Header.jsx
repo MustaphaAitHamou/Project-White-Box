@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '../ui/button';
 import { useGoogleLogin, googleLogout } from '@react-oauth/google';
 import { FcGoogle } from 'react-icons/fc';
+import { X } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -11,96 +12,140 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from '@/components/ui/dialog';
 import ReCAPTCHA from 'react-google-recaptcha';
+import { FaSignOutAlt, FaFileDownload, FaTrashAlt } from 'react-icons/fa';
+import { db } from '@/service/firebaseConfig';
+import { collection, query, where, getDocs, deleteDoc, doc as docRef } from 'firebase/firestore';
 
 export default function Header() {
-  const storedUser = localStorage.getItem('user');
-  const user = storedUser ? JSON.parse(storedUser) : null;
+  const stored = localStorage.getItem('user');
+  const user = stored ? JSON.parse(stored) : null;
 
-  const [openDialog, setOpenDialog] = useState(false);
-  const [consentChecked, setConsentChecked] = useState(false);
-  const [consentError, setConsentError] = useState('');
-  const [recaptchaValue, setRecaptchaValue] = useState(null);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [confirmEmail, setConfirmEmail] = useState('');
+  const [agree, setAgree] = useState(false);
+  const [error, setError] = useState('');
+  const [captcha, setCaptcha] = useState(null);
 
-  useEffect(() => {
-    console.log('User:', user);
-  }, [user]);
+  useEffect(() => console.log('User:', user), [user]);
 
   const login = useGoogleLogin({
-    onSuccess: fetchProfile,
-    onError: () => toast.error("Échec de l'authentification"),
+    onSuccess: handleProfile,
+    onError: () => toast.error('Échec de l’authentification'),
     ux_mode: 'popup',
     scope: 'openid email profile',
   });
 
-  async function fetchProfile({ access_token }) {
+  async function handleProfile({ access_token }) {
     try {
-      const { data } = await axios.get(
+      const res = await axios.get(
         `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${access_token}`
       );
-      localStorage.setItem('user', JSON.stringify(data));
-      setOpenDialog(false);
+      localStorage.setItem('user', JSON.stringify(res.data));
+      setShowLogin(false);
       window.location.reload();
-    } catch (err) {
-      console.error(err);
-      toast.error("Impossible de récupérer les informations");
+    } catch {
+      toast.error('Impossible de récupérer les infos');
     }
   }
 
+  const logout = () => {
+    googleLogout();
+    localStorage.removeItem('user');
+    window.location.reload();
+  };
+
+  const deleteAccount = async () => {
+    if (!user) return;
+    if (confirmEmail !== user.email) {
+      toast.error('Adresse e-mail de confirmation incorrecte.');
+      return;
+    }
+    try {
+      const q = query(collection(db, 'AITrips'), where('userEmail', '==', user.email));
+      const snap = await getDocs(q);
+      await Promise.all(snap.docs.map(d => deleteDoc(docRef(db, 'AITrips', d.id))));
+      await deleteDoc(docRef(db, 'consents', user.id));
+
+      localStorage.removeItem('user');
+      googleLogout();
+      toast.success('Compte supprimé.');
+      window.location.reload();
+    } catch (err) {
+      toast.error('Erreur suppression : ' + err.message);
+    }
+  };
+
   return (
-    <header className="bg-white shadow-md fixed top-0 inset-x-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-        {/* Logo et titre */}
-        <a href="/" className="flex items-center space-x-2">
-          <img src="/logo.svg" alt="Logo" className="h-8 w-auto" />
-          <span className="text-xl font-bold text-indigo-600">TripGenius</span>
-        </a>
-
-        {/* Navigation */}
-        <nav className="hidden md:flex items-center space-x-6">
-          <a href="/create-trip" className="text-gray-700 hover:text-indigo-600 transition">
-            Planifier un voyage
+    <>
+      <header className="bg-white/70 backdrop-blur-md shadow fixed top-0 w-full z-50">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+          <a href="/" className="flex items-center space-x-2">
+            <img src="/logo.svg" alt="Logo" className="h-8" />
+            <span className="text-xl font-bold text-indigo-600">TripGenius</span>
           </a>
-          <a href="/my-trips" className="text-gray-700 hover:text-indigo-600 transition">
-            Mes voyages
-          </a>
-        </nav>
-
-        {/* Connexion utilisateur */}
-        <div className="flex items-center space-x-4">
-          {user ? (
-            <Popover>
-              <PopoverTrigger asChild>
-                <img
-                  src={user.picture}
-                  alt="Avatar"
-                  className="h-10 w-10 rounded-full cursor-pointer"
-                />
-              </PopoverTrigger>
-              <PopoverContent align="end" className="p-2">
-                <button
-                  className="w-full text-left text-gray-700 hover:text-red-500"
-                  onClick={() => {
-                    googleLogout();
-                    localStorage.clear();
-                    window.location.reload();
-                  }}
-                >
-                  Se déconnecter
-                </button>
-              </PopoverContent>
-            </Popover>
-          ) : (
-            <Button onClick={() => setOpenDialog(true)}>
-              Se connecter
-            </Button>
-          )}
+          <nav className="hidden md:flex space-x-6">
+            <a href="/create-trip" className="text-gray-700 hover:text-indigo-600 transition">Planifier</a>
+            {user && (
+              <a href="/my-trips" className="text-gray-700 hover:text-indigo-600 transition">Mes voyages</a>
+            )}
+          </nav>
+          <div>
+            {user ? (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <img
+                    src={user.picture}
+                    alt="avatar"
+                    className="h-10 w-10 rounded-full cursor-pointer ring-2 ring-indigo-400"
+                  />
+                </PopoverTrigger>
+                <PopoverContent align="end" className="p-2 bg-white/90 backdrop-blur-md rounded-lg shadow-lg w-56 space-y-2">
+                  <Button
+                    onClick={logout}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start bg-indigo-50 text-indigo-700 px-4 py-2 rounded-md hover:bg-indigo-100 transition"
+                  >
+                    <FaSignOutAlt className="mr-2" /> Se déconnecter
+                  </Button>
+                  <Button
+                    onClick={() => {/* export_logic */}}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start bg-indigo-50 text-indigo-700 px-4 py-2 rounded-md hover:bg-indigo-100 transition"
+                  >
+                    <FaFileDownload className="mr-2" /> Télécharger mes données
+                  </Button>
+                  <Button
+                    onClick={() => setShowDelete(true)}
+                    variant="solid"
+                    size="sm"
+                    className="w-full justify-center bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition"
+                  >
+                    <FaTrashAlt className="mr-2" /> Supprimer mon compte
+                  </Button>
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <Button
+                onClick={() => setShowLogin(true)}
+                variant="gradient"
+                size="md"
+                className="bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-full px-6 py-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition"
+              >
+                Se connecter
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      </header>
 
-      {/* Dialog Connexion */}
-      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+      {/* Login Dialog */}
+      <Dialog open={showLogin} onOpenChange={setShowLogin}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex flex-col items-center gap-3">
@@ -112,55 +157,89 @@ export default function Header() {
             </DialogDescription>
           </DialogHeader>
 
-          {/* Consentement RGPD */}
           <div className="mt-4 flex items-start gap-2">
             <input
               type="checkbox"
               id="rgpd-consent"
-              checked={consentChecked}
-              onChange={(e) => {
-                setConsentChecked(e.target.checked);
-                setConsentError('');
-              }}
+              checked={agree}
+              onChange={e => { setAgree(e.target.checked); setError(''); }}
               className="mt-1"
             />
             <label htmlFor="rgpd-consent" className="text-sm text-gray-700">
-              J'accepte que mes données soient utilisées par TripGenius conformément à la politique de confidentialité.
+              J'accepte que mes données soient utilisées par TripGenius conformément à la <a href="/privacy-policy" className="text-indigo-600 underline">politique de confidentialité</a>.
             </label>
           </div>
+          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
 
-          {consentError && (
-            <p className="text-red-500 text-sm mt-2">{consentError}</p>
-          )}
-
-          {/* CAPTCHA */}
           <div className="mt-4">
-            <ReCAPTCHA
-              sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-              onChange={(value) => setRecaptchaValue(value)}
-            />
+            <ReCAPTCHA sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY} onChange={setCaptcha} />
           </div>
 
-          {/* Bouton de connexion explicite */}
           <Button
-            className="mt-5 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-500 text-white"
+            className="mt-5 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-full px-6 py-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition"
             onClick={() => {
-              if (!consentChecked) {
-                setConsentError("Vous devez accepter les conditions pour continuer.");
-                return;
-              }
-              if (!recaptchaValue) {
-                toast.error("Veuillez valider le reCAPTCHA.");
-                return;
-              }
+              if (!agree) { setError('Vous devez accepter les conditions pour continuer.'); return; }
+              if (!captcha) { toast.error('Veuillez valider le reCAPTCHA.'); return; }
               login();
             }}
           >
-            <FcGoogle className="h-6 w-6" />
-            Continuer avec Google
+            <FcGoogle className="h-6 w-6" /> Continuer avec Google
           </Button>
+
+          <DialogClose asChild>
+            <button
+              type="button"
+              aria-label="Fermer"
+              className="absolute top-4 right-4 p-2 bg-white rounded-full shadow hover:shadow-md transition"
+            >
+              <X className="h-4 w-4 text-gray-600" />
+            </button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
-    </header>
+
+      {/* Delete Account Dialog */}
+      <Dialog open={showDelete} onOpenChange={setShowDelete}>
+        <DialogContent className="max-w-md mx-auto bg-white rounded-lg p-6 shadow-lg relative">
+          <DialogHeader>
+            <DialogTitle className="text-center text-2xl font-bold text-red-600">
+              Suppression du compte
+            </DialogTitle>
+            <DialogDescription className="text-center text-gray-600 mb-4">
+              Veuillez saisir votre email pour confirmer.
+            </DialogDescription>
+          </DialogHeader>
+
+          <input
+            type="email"
+            value={confirmEmail}
+            onChange={e => setConfirmEmail(e.target.value)}
+            placeholder="votre.email@exemple.com"
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 mb-6"
+          />
+
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setShowDelete(false)} size="md">Annuler</Button>
+            <Button
+              onClick={deleteAccount}
+              variant="destructive"
+              size="md"
+            >
+              Confirmer
+            </Button>
+          </div>
+
+          <DialogClose asChild>
+            <button
+              type="button"
+              aria-label="Fermer"
+              className="absolute top-4 right-4 p-2 bg-white rounded-full shadow hover:shadow-md transition"
+            >
+              <X className="h-4 w-4 text-gray-600" />
+            </button>
+          </DialogClose>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

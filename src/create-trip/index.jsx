@@ -1,3 +1,4 @@
+// src/create-trip/index.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
@@ -10,12 +11,15 @@ import { chatSession } from '~/service/AIModal';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import {
   Dialog,
+  DialogOverlay,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogClose,
 } from '~/components/ui/dialog';
 import { FcGoogle } from 'react-icons/fc';
+import { X } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '~/service/firebaseConfig';
@@ -80,7 +84,7 @@ export default function CreateTrip() {
 
     try {
       const result = await chatSession.sendMessage(finalPrompt);
-      const tripData = result.response.text();
+      const tripData = await result.response.text();
       const tripId = Date.now().toString();
       await setDoc(doc(db, 'AITrips', tripId), {
         userSelection: formData,
@@ -105,21 +109,23 @@ export default function CreateTrip() {
           <h2 className="text-3xl font-bold text-gray-800">Préférences de voyage</h2>
           <p className="mt-2 text-gray-600">Dites-nous où et comment vous souhaitez voyager.</p>
 
+          {/* Destination */}
           <div className="mt-8">
             <label className="block text-lg font-medium text-gray-700">Destination</label>
             <GooglePlacesAutocomplete
               apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
               selectProps={{
-                place,
+                value: place,
                 onChange: v => {
                   setPlace(v);
                   handleInputChange('location', v);
                 },
-                className: 'mt-2 rounded-lg border-gray-300'
+                className: 'mt-2 rounded-lg border-gray-300',
               }}
             />
           </div>
 
+          {/* Nombre de jours */}
           <div className="mt-8">
             <label className="block text-lg font-medium text-gray-700">Nombre de jours</label>
             <Input
@@ -130,12 +136,13 @@ export default function CreateTrip() {
             />
           </div>
 
+          {/* Budget */}
           <div className="mt-8">
             <label className="block text-lg font-medium text-gray-700">Budget</label>
             <div className="grid grid-cols-3 gap-4 mt-3">
-              {SelectBudgetOptions.map((opt, idx) => (
+              {SelectBudgetOptions.map((opt, i) => (
                 <div
-                  key={idx}
+                  key={i}
                   onClick={() => handleInputChange('budget', opt.title)}
                   className={`cursor-pointer p-4 rounded-lg transition-transform transform hover:-translate-y-1 ${
                     formData.budget === opt.title
@@ -151,12 +158,13 @@ export default function CreateTrip() {
             </div>
           </div>
 
+          {/* Voyageurs */}
           <div className="mt-8">
             <label className="block text-lg font-medium text-gray-700">Nombre de voyageurs</label>
             <div className="grid grid-cols-3 gap-4 mt-3">
-              {SelectTravelesList.map((opt, idx) => (
+              {SelectTravelesList.map((opt, i) => (
                 <div
-                  key={idx}
+                  key={i}
                   onClick={() => handleInputChange('traveler', opt.people)}
                   className={`cursor-pointer p-4 rounded-lg transition-transform transform hover:-translate-y-1 ${
                     formData.traveler === opt.people
@@ -172,23 +180,31 @@ export default function CreateTrip() {
             </div>
           </div>
 
+          {/* Bouton Générer */}
           <div className="mt-10 flex justify-end">
             <Button
               onClick={generateTrip}
               disabled={loading}
               className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-3"
             >
-              {loading ? <AiOutlineLoading3Quarters className="animate-spin h-6 w-6" /> : 'Générer'}
+              {loading
+                ? <AiOutlineLoading3Quarters className="animate-spin h-6 w-6" />
+                : 'Générer'
+              }
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Dialog Connexion avec RGPD + reCAPTCHA */}
+      {/* Popup RGPD + reCAPTCHA */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+        <DialogOverlay />
+
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-center text-xl font-bold">Connexion Google</DialogTitle>
+            <DialogTitle className="text-center text-xl font-bold">
+              Connexion Google
+            </DialogTitle>
             <DialogDescription className="text-center text-gray-600">
               Connectez-vous pour lancer la génération.
             </DialogDescription>
@@ -196,10 +212,10 @@ export default function CreateTrip() {
 
           <div className="mt-4 flex items-start gap-2">
             <input
-              type="checkbox"
               id="rgpd-consent"
+              type="checkbox"
               checked={consentChecked}
-              onChange={(e) => {
+              onChange={e => {
                 setConsentChecked(e.target.checked);
                 setConsentError('');
               }}
@@ -209,7 +225,6 @@ export default function CreateTrip() {
               J'accepte que mes données soient utilisées pour la création de voyages personnalisés par TripGenius conformément à la politique de confidentialité.
             </label>
           </div>
-
           {consentError && (
             <p className="text-red-500 text-sm mt-2">{consentError}</p>
           )}
@@ -217,7 +232,7 @@ export default function CreateTrip() {
           <div className="mt-4">
             <ReCAPTCHA
               sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-              onChange={value => setRecaptchaValue(value)}
+              onChange={setRecaptchaValue}
             />
           </div>
 
@@ -238,6 +253,16 @@ export default function CreateTrip() {
             <FcGoogle className="h-6 w-6" />
             Continuer avec Google
           </Button>
+
+          <DialogClose asChild>
+            <button
+              type="button"
+              aria-label="Fermer"
+              className="absolute top-4 right-4 p-2 bg-white rounded-full shadow hover:shadow-md transition"
+            >
+              <X className="h-4 w-4 text-gray-600" />
+            </button>
+          </DialogClose>
         </DialogContent>
       </Dialog>
     </div>

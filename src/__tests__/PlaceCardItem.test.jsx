@@ -1,10 +1,10 @@
 /* eslint-env jest,node */
 /* global jest, describe, it, expect */
-/* global jest, describe, it, expect */
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import PlaceCardItem from '../view-trip/components/PlaceCardItem.jsx';
+// On importe sans extension pour que Jest utilise moduleNameMapper si configuré
+import PlaceCardItem from '../view-trip/components/PlaceCardItem';
 import * as api from '../service/GlobalApi';
 
 // Mock de GlobalApi pour contrôler les retours d'image

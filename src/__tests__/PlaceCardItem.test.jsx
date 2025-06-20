@@ -4,7 +4,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 // On importe sans extension pour que Jest utilise moduleNameMapper si configuré
-import PlaceCardItem from '../view-trip/components/PlaceCardItem';
+import PlaceCardItem from '~/view-trip/components/PlaceCarditem';
 import * as api from '../service/GlobalApi';
 
 // Mock de GlobalApi pour contrôler les retours d'image

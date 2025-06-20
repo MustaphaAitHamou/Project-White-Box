@@ -1,31 +1,54 @@
-/* eslint-env jest,node */
-/* global jest */
-
+/* eslint-env jest */
+/* global jest, describe, it, expect */
 import React from 'react';
-import '@testing-library/jest-dom';
-import { TextEncoder, TextDecoder } from 'util';
+import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import PlaceCardItem from '../view-trip/components/PlaceCardItem';
+import * as api from '../service/GlobalApi';
 
-// — Fallback pour TextEncoder/TextDecoder en environnement de test —
-if (!globalThis.TextEncoder) globalThis.TextEncoder = TextEncoder;
-if (!globalThis.TextDecoder) globalThis.TextDecoder = TextDecoder;
+// Mock de GlobalApi pour contrôler les retours d'image
+jest.mock('../service/GlobalApi');
 
-// — Suppression des console.error indésirables pour les tests —
-const originalConsoleError = console.error;
-console.error = (...args) => {
-  const msg = typeof args[0] === 'string' ? args[0] : '';
-  // On ignore les erreurs de fetch de photo dans nos composants
-  if (
-    msg.includes('Photo fetch error:') ||
-    msg.includes('Erreur récupération photo hôtel')
-  ) {
-    return;
-  }
-  originalConsoleError(...args);
-};
+describe('PlaceCardItem', () => {
+  it('construit bien l’URL de la photo et l’affiche', async () => {
+    const fakeRef = 'XYZ789';
+    api.GetPlaceDetails.mockResolvedValueOnce({
+      data: { places: [{ photos: [{ name: `places/YY/photos/${fakeRef}` }] }] }
+    });
 
-// — Mock minimaliste de react-google-recaptcha —
-jest.mock('react-google-recaptcha', () => {
-  return function DummyReCAPTCHA() {
-    return <div data-testid="recaptcha-mock" />;
-  };
+    render(
+      <MemoryRouter>
+        <PlaceCardItem
+          placeName="Musée"
+          details="Visite culturelle"
+          timeToTravel="5 min"
+        />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      const img = screen.getByAltText('Musée');
+      expect(img).toBeInTheDocument();
+      expect(img.src).toContain(encodeURIComponent(fakeRef));
+    });
+  });
+
+  it('retombe sur le placeholder en cas d’erreur', async () => {
+    api.GetPlaceDetails.mockRejectedValueOnce(new Error('Oops'));
+
+    render(
+      <MemoryRouter>
+        <PlaceCardItem
+          placeName="Musée"
+          details="Visite culturelle"
+          timeToTravel="5 min"
+        />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      const img = screen.getByAltText('Musée');
+      expect(img.src).toContain('/placeholder.png');
+    });
+  });
 });

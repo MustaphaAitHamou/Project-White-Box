@@ -1,4 +1,5 @@
-/* eslint-env jest */
+/* eslint-env jest,node */
+/* global jest, describe, it, expect */
 /* global jest, describe, it, expect */
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';

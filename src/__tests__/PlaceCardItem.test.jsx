@@ -3,7 +3,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import PlaceCardItem from '../view-trip/components/PlaceCardItem';
+import PlaceCardItem from '../view-trip/components/PlaceCardItem.jsx';
 import * as api from '../service/GlobalApi';
 
 // Mock de GlobalApi pour contrôler les retours d'image

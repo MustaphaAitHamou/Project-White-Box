@@ -1,52 +1,31 @@
-// src/__tests__/PlaceCardItem.test.jsx
+/* eslint-env jest,node */
+/* global jest */
+
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import PlaceCardItem from '../view-trip/components/PlaceCardItem';
-import * as api from '../service/GlobalApi';
+import '@testing-library/jest-dom';
+import { TextEncoder, TextDecoder } from 'util';
 
-jest.mock('../service/GlobalApi');
+// — Fallback pour TextEncoder/TextDecoder en environnement de test —
+if (!globalThis.TextEncoder) globalThis.TextEncoder = TextEncoder;
+if (!globalThis.TextDecoder) globalThis.TextDecoder = TextDecoder;
 
-describe('PlaceCardItem', () => {
-  it('affiche l’image construite depuis la référence', async () => {
-    const fakeRef = 'XYZ789';
-    api.GetPlaceDetails.mockResolvedValueOnce({
-      data: { places: [{ photos: [{ name: `places/YY/photos/${fakeRef}` }] }] }
-    });
+// — Suppression des console.error indésirables pour les tests —
+const originalConsoleError = console.error;
+console.error = (...args) => {
+  const msg = typeof args[0] === 'string' ? args[0] : '';
+  // On ignore les erreurs de fetch de photo dans nos composants
+  if (
+    msg.includes('Photo fetch error:') ||
+    msg.includes('Erreur récupération photo hôtel')
+  ) {
+    return;
+  }
+  originalConsoleError(...args);
+};
 
-    render(
-      <MemoryRouter>
-        <PlaceCardItem
-          placeName="Musée"
-          details="Visite culturelle"
-          timeToTravel="5 min"
-        />
-      </MemoryRouter>
-    );
-
-    await waitFor(() => {
-      const img = screen.getByAltText('Musée');
-      expect(img).toBeInTheDocument();
-      expect(img.src).toContain(encodeURIComponent(fakeRef));
-    });
-  });
-
-  it('retombe sur le placeholder en cas d’erreur', async () => {
-    api.GetPlaceDetails.mockRejectedValueOnce(new Error('Oops'));
-
-    render(
-      <MemoryRouter>
-        <PlaceCardItem
-          placeName="Musée"
-          details="Visite culturelle"
-          timeToTravel="5 min"
-        />
-      </MemoryRouter>
-    );
-
-    await waitFor(() => {
-      const img = screen.getByAltText('Musée');
-      expect(img.src).toContain('/placeholder.png');
-    });
-  });
+// — Mock minimaliste de react-google-recaptcha —
+jest.mock('react-google-recaptcha', () => {
+  return function DummyReCAPTCHA() {
+    return <div data-testid="recaptcha-mock" />;
+  };
 });

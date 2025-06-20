@@ -1,4 +1,5 @@
-// src/setupTests.js
+/* eslint-env jest,node */
+/* global jest */
 
 import React from 'react';
 import '@testing-library/jest-dom';

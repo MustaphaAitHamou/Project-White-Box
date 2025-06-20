@@ -1,4 +1,5 @@
-// src/__tests__/InfoSection.test.jsx
+/* eslint-env jest,node */
+/* global jest, describe, it, expect */
 
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -40,7 +41,6 @@ describe('InfoSection', () => {
       </MemoryRouter>
     );
 
-    // On attend que l'image apparaisse et que son src contienne l'URL Google Place Photo
     await waitFor(() => {
       const img = screen.getByAltText(/Photo de Berlin/i);
       expect(img).toBeInTheDocument();

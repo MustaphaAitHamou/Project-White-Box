@@ -1,17 +1,20 @@
-// src/__tests__/HotelCardItem.test.jsx
+/* eslint-env jest,node */
+/* global jest, describe, it, expect */
+
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import HotelCardItem from '../view-trip/components/HotelCardItem';
 import * as api from '../service/GlobalApi';
 
+// Mock du module GlobalApi
 jest.mock('../service/GlobalApi');
 
 describe('HotelCardItem', () => {
   it('construit bien l’URL de la photo et l’affiche', async () => {
     const fakePhotoRef = 'ABC123';
     api.GetPlaceDetails.mockResolvedValueOnce({
-      data: { places: [{ photos: [{ name: `places/XX/photos/${fakePhotoRef}` }] }] }
+      data: { places: [{ photos: [{ name: `places/XX/photos/${fakePhotoRef}` }] }] },
     });
 
     render(
@@ -21,7 +24,7 @@ describe('HotelCardItem', () => {
             hotelName: 'Test Hotel',
             hotelAddress: '123 Rue Fictive',
             price: '$50',
-            rating: '4.0 Stars'
+            rating: '4.0 Stars',
           }}
         />
       </MemoryRouter>
@@ -45,7 +48,7 @@ describe('HotelCardItem', () => {
             hotelName: 'Test Hotel',
             hotelAddress: '123 Rue Fictive',
             price: '$50',
-            rating: '4.0 Stars'
+            rating: '4.0 Stars',
           }}
         />
       </MemoryRouter>

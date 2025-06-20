@@ -1,3 +1,5 @@
-// __mocks__/styleMock.js
-// Mock vide pour les imports de fichiers CSS/SCSS
+/* eslint-env node */
+/* global module */
+
+// Jest mock for style imports (CSS/SCSS etc.)
 module.exports = {};

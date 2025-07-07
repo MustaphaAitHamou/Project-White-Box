@@ -1,5 +1,4 @@
 // src/components/custom/Header.jsx
-
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { useGoogleLogin, googleLogout } from '@react-oauth/google';
@@ -7,7 +6,12 @@ import { FcGoogle } from 'react-icons/fc';
 import { X } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import ReCAPTCHA from 'react-google-recaptcha';
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from '@/components/ui/popover';
 import {
   Dialog,
   DialogOverlay,
@@ -32,12 +36,18 @@ export default function Header() {
   const stored = localStorage.getItem('user');
   const user = stored ? JSON.parse(stored) : null;
 
+  // État de la pop-up de login
   const [showLogin, setShowLogin] = useState(false);
+  // États pour suppression de compte
   const [showDelete, setShowDelete] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState('');
+
+  // Consentement RGPD + reCAPTCHA
   const [agree, setAgree] = useState(false);
   const [error, setError] = useState('');
+  const [recaptchaValue, setRecaptchaValue] = useState(null);
 
+  /* ─────────────  Auth Google  ───────────── */
   const login = useGoogleLogin({
     onSuccess: handleProfile,
     onError: () => toast.error('Échec de l’authentification'),
@@ -64,6 +74,7 @@ export default function Header() {
     window.location.reload();
   };
 
+  /* ─────────────  Suppression compte  ───────────── */
   const deleteAccount = async () => {
     if (!user) return;
     if (confirmEmail !== user.email) {
@@ -87,26 +98,20 @@ export default function Header() {
 
   return (
     <>
+      {/* ─────────────  BARRE DE NAV  ───────────── */}
       <header className="bg-transparent backdrop-blur-md shadow fixed top-0 w-full z-50">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <a href="/" className="flex items-center space-x-2">
             <img src="/logo.svg" alt="Logo" className="h-8" />
-            {/* Texte TripGenius en blanc */}
             <span className="text-xl font-bold text-white">TripGenius</span>
           </a>
 
           <nav className="hidden md:flex space-x-6">
-            <a
-              href="/create-trip"
-              className="text-white hover:text-indigo-200 transition"
-            >
+            <a href="/create-trip" className="text-white hover:text-indigo-200 transition">
               Planifier
             </a>
             {user && (
-              <a
-                href="/my-trips"
-                className="text-white hover:text-indigo-200 transition"
-              >
+              <a href="/my-trips" className="text-white hover:text-indigo-200 transition">
                 Mes voyages
               </a>
             )}
@@ -166,7 +171,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Dialogs… */}
+      {/* ─────────────  DIALOG : LOGIN  ───────────── */}
       <Dialog open={showLogin} onOpenChange={setShowLogin}>
         <DialogOverlay />
         <DialogContent>
@@ -180,6 +185,7 @@ export default function Header() {
             </DialogDescription>
           </DialogHeader>
 
+          {/* Consentement RGPD */}
           <div className="mt-4 flex items-start gap-2">
             <input
               id="rgpd-consent"
@@ -192,15 +198,34 @@ export default function Header() {
               className="mt-1"
             />
             <label htmlFor="rgpd-consent" className="text-sm text-gray-700">
-              J'accepte que mes données soient utilisées par TripGenius conformément
+              J&apos;accepte que mes données soient utilisées par TripGenius conformément
               à la politique de confidentialité.
             </label>
           </div>
           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
 
+          {/* reCAPTCHA */}
+          <div className="mt-4">
+            <ReCAPTCHA
+              sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+              onChange={setRecaptchaValue}
+            />
+          </div>
+
+          {/* Bouton Google */}
           <Button
             className="mt-5 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-full px-6 py-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition"
-            onClick={login}
+            onClick={() => {
+              if (!agree) {
+                setError('Vous devez accepter les conditions pour continuer.');
+                return;
+              }
+              if (!recaptchaValue) {
+                toast.error('Veuillez valider le reCAPTCHA');
+                return;
+              }
+              login(); // ↳ déclenche la pop-up Google
+            }}
           >
             <FcGoogle className="h-6 w-6" /> Continuer avec Google
           </Button>
@@ -217,6 +242,7 @@ export default function Header() {
         </DialogContent>
       </Dialog>
 
+      {/* ─────────────  DIALOG : SUPPRESSION COMPTE  ───────────── */}
       <Dialog open={showDelete} onOpenChange={setShowDelete}>
         <DialogOverlay />
         <DialogContent className="max-w-md mx-auto bg-white rounded-lg p-6 shadow-lg relative">

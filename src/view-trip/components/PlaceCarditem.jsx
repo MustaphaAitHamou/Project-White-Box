@@ -1,73 +1,101 @@
-import React, { useEffect, useState } from 'react';
-import { FaMapLocationDot } from 'react-icons/fa6';
-import { Link } from 'react-router-dom';
-import { Button } from '~/components/ui/button';
-import { GetPlaceDetails } from '~/service/GlobalApi';
+/* ------------------------------------------------------------------
+   src/view-trip/components/PlaceCardItem.jsx
+------------------------------------------------------------------- */
+import React, { useEffect, useState } from "react";
+import { FaMapLocationDot } from "react-icons/fa6";
+import { Link } from "react-router-dom";
+import { Button } from "~/components/ui/button";
+import { GetPlaceDetails } from "~/service/GlobalApi";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_PLACE_API_KEY;
-const LEGACY_PHOTO_URL = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference={PHOTO_REF}&key=${API_KEY}`;
+const buildPhotoUrl = (fullName) =>
+  `https://places.googleapis.com/v1/${fullName}/media?maxHeightPx=800&maxWidthPx=800&key=${API_KEY}`;
 
-export default function PlaceCardItem({ placeName, details, timeToTravel }) {
-  const [photoUrl, setPhotoUrl] = useState('/placeholder.png');
-  const [tried, setTried] = useState(false);
-  const query = placeName?.trim();
+export default function PlaceCardItem({
+  placeName,
+  details,
+  timeToTravel,
+  slotLabel,
+  destinationLabel,        /* ← nouveau */
+}) {
+  /* ---------- états --------- */
+  const [photoUrl, setPhotoUrl] = useState("/placeholder.png");
+  const [mapsUrl,  setMapsUrl]  = useState("");
 
+  /* ---------- fetch --------- */
   useEffect(() => {
-    if (!query || tried) return;
-    setTried(true);
-    fetchPlacePhoto(query);
-  }, [query, tried]);
+    if (!placeName) return;
 
-  const fetchPlacePhoto = async textQuery => {
-    try {
-      const resp = await GetPlaceDetails({ textQuery });
-      const place = resp.data.places?.[0];
-      const fullName = place?.photos?.[0]?.name;
-      if (!fullName) return;
-      const photoRef = fullName.split('/photos/')[1];
-      const url = LEGACY_PHOTO_URL.replace('{PHOTO_REF}', encodeURIComponent(photoRef));
-      setPhotoUrl(url);
-    } catch (err) {
-      console.error('Photo fetch error:', err);
-    }
-  };
+    const fullQuery = destinationLabel
+      ? `${placeName} ${destinationLabel}`        /* ex : Pantheon Rome Italy */
+      : placeName;
 
-  return (
-    <Link
-      to={
-        'https://www.google.com/maps/search/?api=1&query=' +
-        encodeURIComponent(placeName)
+    (async () => {
+      try {
+        const { data } = await GetPlaceDetails({ textQuery: fullQuery });
+        const place   = data.places?.[0];
+        if (!place) return;
+
+        /* photo */
+        const photo = place.photos?.[0]?.name;
+        if (photo) setPhotoUrl(buildPhotoUrl(photo));
+
+        /* lien G-Maps : priorité aux coord°, sinon on retombe sur fullQuery */
+        const { latitude, longitude } = place.location || {};
+        const url = latitude && longitude
+          ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullQuery)}`;
+        setMapsUrl(url);
+      } catch (err) {
+        console.error("Place details error:", err);
+        /* fallback simple */
+        setMapsUrl(
+          `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+            fullQuery
+          )}`
+        );
       }
-      target="_blank"
-      rel="noreferrer"
-      className="block"
-    >
-      <div className="flex flex-col bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-        {/* Image */}
-        <img
-          src={photoUrl}
-          alt={placeName}
-          className="w-full h-40 object-cover"
-          onError={e => { e.currentTarget.src = '/placeholder.png'; }}
-        />
+    })();
+  }, [placeName, destinationLabel]);
 
-        <div className="p-4 flex-1 flex flex-col justify-between">
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">{placeName}</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">{details}</p>
-          </div>
+  /* ---------------- UI ---------------- */
+  return (
+    <div className="flex flex-col overflow-hidden rounded-xl bg-white shadow hover:shadow-lg transition-shadow">
+      <img
+        src={photoUrl}
+        alt={placeName}
+        className="h-40 w-full object-cover"
+        onError={(e) => (e.currentTarget.src = "/placeholder.png")}
+      />
 
-          <div className="mt-4 flex items-center justify-between">
-            <span className="text-gray-700 text-sm flex items-center">
-              <span role="img" aria-label="time" className="mr-1">🕙</span>
-              {timeToTravel}
+      <div className="flex flex-1 flex-col p-4">
+        {slotLabel && (
+          <p className="mb-1 text-xs font-semibold text-orange-600">{slotLabel}</p>
+        )}
+
+        <h3 className="text-lg font-bold text-gray-900">{placeName}</h3>
+        <p className="mt-1 flex-1 text-sm text-gray-600 line-clamp-3">{details}</p>
+
+        <div className="mt-4 flex items-center justify-between text-sm">
+          <span className="inline-flex items-center gap-1 text-gray-700">
+            <span role="img" aria-label="time">
+              🕙
             </span>
-            <Button size="sm" variant="outline" className="p-2">
+            {timeToTravel}
+          </span>
+
+          <Link
+            to={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Ouvrir dans Google Maps"
+          >
+            <Button size="icon" variant="outline" className="p-2">
               <FaMapLocationDot />
             </Button>
-          </div>
+          </Link>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

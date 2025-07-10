@@ -1,28 +1,29 @@
-// src/components/custom/Header.jsx
-import React, { useState } from 'react';
-import { Button } from '../ui/button';
-import { useGoogleLogin, googleLogout } from '@react-oauth/google';
-import { FcGoogle } from 'react-icons/fc';
-import { X } from 'lucide-react';
-import axios from 'axios';
-import { toast } from 'sonner';
-import ReCAPTCHA from 'react-google-recaptcha';
+/* ------------------------------------------------------------------
+   src/components/custom/Header.jsx
+------------------------------------------------------------------- */
+import React, { useState, useRef, useEffect } from "react"
+import { Button } from "../ui/button"
+import { useGoogleLogin, googleLogout } from "@react-oauth/google"
+import { FcGoogle } from "react-icons/fc"
+import { X } from "lucide-react"
+import axios from "axios"
+import { toast } from "sonner"
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from '@/components/ui/popover';
+} from "@/components/ui/popover"
 import {
   Dialog,
   DialogOverlay,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogClose,
-} from '@/components/ui/dialog';
-import { FaSignOutAlt, FaFileDownload, FaTrashAlt } from 'react-icons/fa';
-import { db } from '@/service/firebaseConfig';
+} from "@/components/ui/dialog"
+import { FaSignOutAlt, FaFileDownload, FaTrashAlt } from "react-icons/fa"
+import { db } from "@/service/firebaseConfig"
 import {
   collection,
   query,
@@ -30,88 +31,148 @@ import {
   getDocs,
   deleteDoc,
   doc as docRef,
-} from 'firebase/firestore';
+} from "firebase/firestore"
+import ReCAPTCHA from "react-google-recaptcha"
+
+/* --- détection iOS & présence de clé reCAPTCHA ------------------- */
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+const RECAPTCHA_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || ""
+const useRecaptcha = !!RECAPTCHA_KEY && !isIOS    // vrai = on l’utilise
 
 export default function Header() {
-  const stored = localStorage.getItem('user');
-  const user = stored ? JSON.parse(stored) : null;
+  /* ------------- état utilisateur (réactif) ---------------------- */
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null")
+    } catch {
+      return null
+    }
+  })
 
-  // État de la pop-up de login
-  const [showLogin, setShowLogin] = useState(false);
-  // États pour suppression de compte
-  const [showDelete, setShowDelete] = useState(false);
-  const [confirmEmail, setConfirmEmail] = useState('');
+  /* autres états UI */
+  const [showLogin, setShowLogin]       = useState(false)
+  const [showDelete, setShowDelete]     = useState(false)
+  const [confirmEmail, setConfirmEmail] = useState("")
+  const [agree, setAgree]               = useState(false)
+  const [error, setError]               = useState("")
+  const recaptchaRef = useRef(null)
 
-  // Consentement RGPD + reCAPTCHA
-  const [agree, setAgree] = useState(false);
-  const [error, setError] = useState('');
-  const [recaptchaValue, setRecaptchaValue] = useState(null);
+  /* ---- synchro cross-tab / cross-component ---------------------- */
+  useEffect(() => {
+    const syncUser = () => {
+      try {
+        setUser(JSON.parse(localStorage.getItem("user") || "null"))
+      } catch {
+        setUser(null)
+      }
+    }
+    window.addEventListener("storage", syncUser)
+    window.addEventListener("userChanged", syncUser)
+    return () => {
+      window.removeEventListener("storage", syncUser)
+      window.removeEventListener("userChanged", syncUser)
+    }
+  }, [])
 
-  /* ─────────────  Auth Google  ───────────── */
+  /* ------------------ OAuth Google ------------------------------- */
   const login = useGoogleLogin({
     onSuccess: handleProfile,
-    onError: () => toast.error('Échec de l’authentification'),
-    ux_mode: 'popup',
-    scope: 'openid email profile',
-  });
+    onError  : () => toast.error("Échec de l’authentification Google"),
+    scope    : "openid email profile",
+    ux_mode  : isIOS ? "redirect" : "popup",
+    redirect_uri: window.location.origin + "/",
+  })
 
   async function handleProfile({ access_token }) {
     try {
-      const res = await axios.get(
+      const { data } = await axios.get(
         `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${access_token}`
-      );
-      localStorage.setItem('user', JSON.stringify(res.data));
-      setShowLogin(false);
-      window.location.reload();
+      )
+      localStorage.setItem("user", JSON.stringify(data))
+      window.dispatchEvent(new Event("userChanged"))
+      setUser(data)
+      setShowLogin(false)
     } catch {
-      toast.error('Impossible de récupérer les infos');
+      toast.error("Impossible de récupérer les informations Google")
     }
   }
 
-  const logout = () => {
-    googleLogout();
-    localStorage.removeItem('user');
-    window.location.reload();
-  };
+  /* ---------------- reCAPTCHA (V2 invisible) --------------------- */
+  const onRecaptchaDone = (token) => {
+    if (!token) {
+      toast.error("Échec reCAPTCHA, réessayez.")
+      return
+    }
+    recaptchaRef.current.reset()
+    login()
+  }
 
-  /* ─────────────  Suppression compte  ───────────── */
+  const handleContinue = () => {
+    if (!agree) {
+      setError("Vous devez accepter la collecte de données.")
+      return
+    }
+    if (useRecaptcha) {
+      recaptchaRef.current.execute()
+    } else {
+      login()                     // pas de reCAPTCHA -> Google direct
+    }
+  }
+
+  /* ---------------- logout & suppression ------------------------- */
+  const logout = () => {
+    googleLogout()
+    localStorage.removeItem("user")
+    window.dispatchEvent(new Event("userChanged"))
+    setUser(null)
+  }
+
   const deleteAccount = async () => {
-    if (!user) return;
+    if (!user) return
     if (confirmEmail !== user.email) {
-      toast.error('Adresse e-mail de confirmation incorrecte.');
-      return;
+      toast.error("E-mail incorrect")
+      return
     }
     try {
-      const q = query(collection(db, 'AITrips'), where('userEmail', '==', user.email));
-      const snap = await getDocs(q);
-      await Promise.all(snap.docs.map((d) => deleteDoc(docRef(db, 'AITrips', d.id))));
-      await deleteDoc(docRef(db, 'consents', user.id));
-
-      localStorage.removeItem('user');
-      googleLogout();
-      toast.success('Compte supprimé.');
-      window.location.reload();
+      const q = query(
+        collection(db, "AITrips"),
+        where("userEmail", "==", user.email)
+      )
+      const snap = await getDocs(q)
+      await Promise.all(
+        snap.docs.map((d) => deleteDoc(docRef(db, "AITrips", d.id)))
+      )
+      await deleteDoc(docRef(db, "consents", user.id))
+      logout()
+      toast.success("Compte supprimé.")
     } catch (err) {
-      toast.error('Erreur suppression : ' + err.message);
+      toast.error("Erreur suppression : " + err.message)
     }
-  };
+  }
 
+  /* =========================== UI ================================ */
   return (
     <>
-      {/* ─────────────  BARRE DE NAV  ───────────── */}
-      <header className="bg-transparent backdrop-blur-md shadow fixed top-0 w-full z-50">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+      {/* -------------------- Barre de navigation ------------------ */}
+      <header className="fixed top-0 z-50 w-full bg-transparent backdrop-blur-md shadow">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
           <a href="/" className="flex items-center space-x-2">
             <img src="/logo.svg" alt="Logo" className="h-8" />
             <span className="text-xl font-bold text-white">TripGenius</span>
           </a>
 
-          <nav className="hidden md:flex space-x-6">
-            <a href="/create-trip" className="text-white hover:text-indigo-200 transition">
+          <nav className="flex flex-col items-start gap-4 md:flex-row md:items-center md:gap-6">
+            <a
+              href="/create-trip"
+              className="text-white transition hover:text-indigo-200"
+            >
               Planifier
             </a>
             {user && (
-              <a href="/my-trips" className="text-white hover:text-indigo-200 transition">
+              <a
+                href="/my-trips"
+                className="text-white transition hover:text-indigo-200"
+              >
                 Mes voyages
               </a>
             )}
@@ -119,31 +180,31 @@ export default function Header() {
 
           <div>
             {user ? (
+              /* ------------ Menu utilisateur -------------------- */
               <Popover>
                 <PopoverTrigger asChild>
                   <img
                     src={user.picture}
                     alt="avatar"
-                    className="h-10 w-10 rounded-full cursor-pointer ring-2 ring-indigo-400"
+                    className="h-10 w-10 cursor-pointer rounded-full ring-2 ring-indigo-400"
                   />
                 </PopoverTrigger>
                 <PopoverContent
                   align="end"
-                  className="p-2 bg-transparent backdrop-blur-md rounded-lg shadow-lg w-56 space-y-2"
+                  className="w-56 rounded-lg bg-white p-2 shadow-lg"
                 >
                   <Button
                     onClick={logout}
                     variant="ghost"
                     size="sm"
-                    className="w-full justify-start px-4 py-2 rounded-md hover:bg-gray-100 transition"
+                    className="w-full justify-start"
                   >
                     <FaSignOutAlt className="mr-2" /> Se déconnecter
                   </Button>
                   <Button
-                    onClick={() => {}}
                     variant="ghost"
                     size="sm"
-                    className="w-full justify-start px-4 py-2 rounded-md hover:bg-gray-100 transition"
+                    className="w-full justify-start"
                   >
                     <FaFileDownload className="mr-2" /> Télécharger mes données
                   </Button>
@@ -151,7 +212,7 @@ export default function Header() {
                     onClick={() => setShowDelete(true)}
                     variant="solid"
                     size="sm"
-                    className="w-full justify-center bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition"
+                    className="w-full justify-center bg-red-600 text-white"
                   >
                     <FaTrashAlt className="mr-2" /> Supprimer mon compte
                   </Button>
@@ -161,8 +222,7 @@ export default function Header() {
               <Button
                 onClick={() => setShowLogin(true)}
                 variant="gradient"
-                size="md"
-                className="bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-full px-6 py-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition"
+                className="rounded-full bg-gradient-to-r from-purple-600 to-blue-500 px-6 py-2 text-white shadow-lg"
               >
                 Se connecter
               </Button>
@@ -171,7 +231,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* ─────────────  DIALOG : LOGIN  ───────────── */}
+      {/* ------------------------ Dialog Login -------------------- */}
       <Dialog open={showLogin} onOpenChange={setShowLogin}>
         <DialogOverlay />
         <DialogContent>
@@ -185,56 +245,51 @@ export default function Header() {
             </DialogDescription>
           </DialogHeader>
 
-          {/* Consentement RGPD */}
+          {/* RGPD checkbox */}
           <div className="mt-4 flex items-start gap-2">
             <input
               id="rgpd-consent"
               type="checkbox"
               checked={agree}
               onChange={(e) => {
-                setAgree(e.target.checked);
-                setError('');
+                setAgree(e.target.checked)
+                setError("")
               }}
               className="mt-1"
             />
             <label htmlFor="rgpd-consent" className="text-sm text-gray-700">
-              J&apos;accepte que mes données soient utilisées par TripGenius conformément
-              à la politique de confidentialité.
+              J’accepte l’utilisation de mes données par TripGenius.
             </label>
           </div>
-          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-
-          {/* reCAPTCHA */}
-          <div className="mt-4">
-            <ReCAPTCHA
-              sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-              onChange={setRecaptchaValue}
-            />
-          </div>
+          {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
 
           {/* Bouton Google */}
           <Button
-            className="mt-5 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-full px-6 py-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition"
-            onClick={() => {
-              if (!agree) {
-                setError('Vous devez accepter les conditions pour continuer.');
-                return;
-              }
-              if (!recaptchaValue) {
-                toast.error('Veuillez valider le reCAPTCHA');
-                return;
-              }
-              login(); // ↳ déclenche la pop-up Google
-            }}
+            className="mt-6 flex w-full items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-500 text-white"
+            onClick={handleContinue}
           >
             <FcGoogle className="h-6 w-6" /> Continuer avec Google
           </Button>
+
+          {/* reCAPTCHA invisible V2 (facultatif) */}
+          {useRecaptcha && (
+            <ReCAPTCHA
+              ref={recaptchaRef}
+              size="invisible"
+              sitekey={RECAPTCHA_KEY}
+              onChange={onRecaptchaDone}
+              onErrored={() => {
+                toast.error("reCAPTCHA indisponible, connexion directe.")
+                login()
+              }}
+            />
+          )}
 
           <DialogClose asChild>
             <button
               type="button"
               aria-label="Fermer"
-              className="absolute top-4 right-4 p-2 bg-transparent rounded-full hover:bg-gray-200 transition"
+              className="absolute top-4 right-4 rounded-full bg-white p-2 shadow hover:shadow-md"
             >
               <X className="h-4 w-4 text-gray-600" />
             </button>
@@ -242,16 +297,16 @@ export default function Header() {
         </DialogContent>
       </Dialog>
 
-      {/* ─────────────  DIALOG : SUPPRESSION COMPTE  ───────────── */}
+      {/* ------------------- Dialog Suppression ------------------- */}
       <Dialog open={showDelete} onOpenChange={setShowDelete}>
         <DialogOverlay />
-        <DialogContent className="max-w-md mx-auto bg-white rounded-lg p-6 shadow-lg relative">
+        <DialogContent className="mx-auto max-w-md rounded-lg bg-white p-6 shadow-lg">
           <DialogHeader>
             <DialogTitle className="text-center text-2xl font-bold text-red-600">
               Suppression du compte
             </DialogTitle>
-            <DialogDescription className="text-center text-gray-600 mb-4">
-              Veuillez saisir votre email pour confirmer.
+            <DialogDescription className="mb-4 text-center text-gray-600">
+              Saisis ton e-mail pour confirmer.
             </DialogDescription>
           </DialogHeader>
 
@@ -260,19 +315,19 @@ export default function Header() {
             value={confirmEmail}
             onChange={(e) => setConfirmEmail(e.target.value)}
             placeholder="votre.email@exemple.com"
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 mb-6"
+            className="mb-6 w-full rounded border border-gray-300 px-3 py-2 focus:outline-none"
           />
 
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" size="md" onClick={() => setShowDelete(false)}>
+            <Button variant="outline" onClick={() => setShowDelete(false)}>
               Annuler
             </Button>
-            <Button variant="destructive" size="md" onClick={deleteAccount}>
+            <Button variant="destructive" onClick={deleteAccount}>
               Confirmer
             </Button>
           </div>
         </DialogContent>
       </Dialog>
     </>
-  );
+  )
 }

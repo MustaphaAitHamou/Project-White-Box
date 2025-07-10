@@ -1,30 +1,47 @@
-// src/components/Footer.jsx
-
-import React from "react";
-import { Link } from "react-router-dom";
+/* ------------------------------------------------------------------
+   src/components/Footer.jsx   (version sans marge externe)
+------------------------------------------------------------------- */
+import React from "react"
+import { Link } from "react-router-dom"
 
 export default function Footer() {
   return (
-    <footer className="mt-20 px-6 py-8 bg-transparent">  {/* fond transparent */}
-      <div className="max-w-6xl mx-auto text-center">
-        <p className="text-gray-600 text-sm mb-3">
-          Créé par <span className="font-semibold text-indigo-600">Aknanir nAth Yetturagh</span>
+    <footer className="bg-gray-700 backdrop-blur-sm border-t border-white/10">
+      <div className="max-w-6xl mx-auto px-6 py-10 text-center space-y-6">
+        <p className="text-sm text-gray-400">
+          Créé par{" "}
+          <span className="font-semibold text-indigo-400">
+            Aknanir nAth&nbsp;Yetturagh
+          </span>
         </p>
-        <nav className="flex justify-center flex-wrap gap-6 text-sm text-gray-500">
-          <Link to="/privacy-policy" className="hover:text-indigo-600 transition">
+
+        <nav className="flex flex-wrap justify-center gap-6 text-sm">
+          <Link
+            to="/privacy-policy"
+            className="text-gray-400 hover:text-white transition-colors"
+          >
             Politique de confidentialité
           </Link>
-          <Link to="/cookie-settings" className="hover:text-indigo-600 transition">
+          <Link
+            to="/cookie-settings"
+            className="text-gray-400 hover:text-white transition-colors"
+          >
             Paramètres des cookies
           </Link>
-          <Link to="/legal-mentions" className="hover:text-indigo-600 transition">
+          <Link
+            to="/legal-mentions"
+            className="text-gray-400 hover:text-white transition-colors"
+          >
             Mentions légales
           </Link>
-          <Link to="/sitemap" className="hover:text-indigo-600 transition">
+          <Link
+            to="/sitemap"
+            className="text-gray-400 hover:text-white transition-colors"
+          >
             Plan du site
           </Link>
         </nav>
       </div>
     </footer>
-  );
+  )
 }

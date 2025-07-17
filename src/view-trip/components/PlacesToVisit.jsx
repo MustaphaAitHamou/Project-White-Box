@@ -1,63 +1,63 @@
 /* ------------------------------------------------------------------
-   src/view-trip/components/PlacesToVisit.jsx   ← version complète
+   Itinéraire quotidien – ordre Breakfast → Evening garanti
 ------------------------------------------------------------------- */
-import React from "react";
-import PlaceCardItem from "./PlaceCardItem";    // ⚠️ orthographe exacte
+import React from 'react';
+import PlaceCardItem from './PlaceCardItem';
+
+const SLOT_ORDER = {
+  breakfast : 0,
+  morning   : 1,
+  afternoon : 2,
+  evening   : 3,
+};
 
 export default function PlacesToVisit({ trip }) {
-  const days             = trip.TripData?.dailyItinerary || [];
-  const destinationLabel =
-    trip?.userSelection?.location?.label || ""; // ex. "Rome, Italy"
+  const { dailyItinerary = [] } = trip?.TripData || {};
+  const destinationLabel = trip?.userSelection?.location?.label || '';
 
-  if (days.length === 0) {
-    return <p className="text-red-600">Aucun itinéraire à afficher.</p>;
+  if (!dailyItinerary.length) {
+    return (
+      <p className="rounded bg-yellow-50 p-4 text-sm text-yellow-800">
+        Aucun itinéraire n’a été généré pour ce voyage.
+      </p>
+    );
   }
 
   return (
-    <div>
-      <h2 className="text-lg font-bold mb-4">Places to Visit</h2>
+    <div className="space-y-10">
+      <h2 className="text-2xl font-bold">Itinéraire quotidien</h2>
 
-      {days.map((day, dayIdx) => (
-        <div key={dayIdx} className="mb-8">
-          {/* ------------- en-tête du jour ------------- */}
-          <h3 className="text-xl font-medium mb-1">Jour {day.dayNumber}</h3>
-          {day.theme && (
-            <p className="italic text-sm text-gray-600 mb-3">
-              Thème&nbsp;: {day.theme}
-            </p>
-          )}
+      {dailyItinerary.map(({ dayNumber, theme, activities }) => {
+        /*  tri explicite Breakfast→Morning→Afternoon→Evening  */
+        const ordered = [...(activities || [])].sort((a, b) => {
+          const ra = SLOT_ORDER[a.bestTimeToVisit?.toLowerCase()] ?? 99;
+          const rb = SLOT_ORDER[b.bestTimeToVisit?.toLowerCase()] ?? 99;
+          return ra - rb;
+        });
 
-          {/* ------------- activités ------------- */}
-          {day.activities?.length ? (
-            <div className="-mx-2 flex flex-wrap">
-              {day.activities.map((act, actIdx) => (
-                <div
-                  key={actIdx}
-                  className="w-full sm:w-1/2 lg:w-1/3 px-2 mb-4"
-                >
-                  <div className="h-full flex flex-col border rounded-lg p-4">
-                    {act.bestTimeToVisit && (
-                      <h4 className="mb-2 text-sm font-medium text-orange-600">
-                        {act.bestTimeToVisit}
-                      </h4>
-                    )}
+        return (
+          <section key={dayNumber} className="space-y-4">
+            <h3 className="text-xl font-semibold">
+              Jour&nbsp;{dayNumber}
+              {theme && (
+                <span className="ml-2 text-sm italic text-gray-500">
+                  ({theme})
+                </span>
+              )}
+            </h3>
 
-                    <PlaceCardItem
-                      placeName={act.placeName}
-                      details={act.details}
-                      timeToTravel={act.timeToTravel}
-                      slotLabel={act.bestTimeToVisit}
-                      destinationLabel={destinationLabel}  
-                    />
-                  </div>
-                </div>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {ordered.map((act, idx) => (
+                <PlaceCardItem
+                  key={`${act.placeName}-${idx}`}
+                  {...act}
+                  destinationLabel={destinationLabel}
+                />
               ))}
             </div>
-          ) : (
-            <p className="text-gray-500">Pas d’activités ce jour.</p>
-          )}
-        </div>
-      ))}
+          </section>
+        );
+      })}
     </div>
   );
 }

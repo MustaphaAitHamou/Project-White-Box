@@ -1,23 +1,34 @@
-// src/view-trip/components/Hotels.jsx
-import React from "react";
-import HotelCardItem from "./HotelCardItem"; // importe ton composant
-// plus besoin de Link ici
+/* ------------------------------------------------------------------
+   Grille d’hôtels – clé unique + fallback « aucun »
+------------------------------------------------------------------- */
+import React from 'react'
+import HotelCardItem from './HotelCardItem'
 
-function Hotels({ trip }) {
+export default function Hotels({ trip }) {
+  const hotels = trip?.TripData?.hotelOptions || []
+
+  if (!hotels.length) {
+    const label = trip?.userSelection?.location?.label || 'la destination'
+    return (
+      <p className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
+        aucun hôtel n’a été trouvé pour « {label} ».
+      </p>
+    )
+  }
+
   return (
-    <div>
-      <h2 className="font-bold text-xl mt-5">Hotel Recommandation</h2>
+    <>
+      <h2 className="text-2xl font-bold mb-4">Hôtels recommandés</h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
-        {trip?.TripData?.hotelOptions?.map((hotel, index) => (
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {hotels.map((h, idx) => (
+          /* clé unique = nom + index */
           <HotelCardItem
-            key={hotel.id ?? `${hotel.hotelName}-${index}`}
-            hotel={hotel}
+            key={`${h.hotelName}-${idx}`}
+            hotel={h}
           />
         ))}
       </div>
-    </div>
-  );
+    </>
+  )
 }
-
-export default Hotels;

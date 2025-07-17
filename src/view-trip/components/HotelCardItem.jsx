@@ -1,71 +1,97 @@
-  // src/view-trip/components/HotelCardItem.jsx
-  import React, { useEffect, useState } from "react";
-  import { Link } from "react-router-dom";
-  import { GetPlaceDetails } from "~/service/GlobalApi";
+/* ------------------------------------------------------------------
+   Carte Hôtel – image robuste + badge note + détails complets
+------------------------------------------------------------------- */
+import React, { useEffect, useState } from 'react'
+import { FaMapMarkerAlt, FaEuroSign, FaStar } from 'react-icons/fa'
+import { GetPlaceDetails } from '~/service/GlobalApi'
 
-  const API_KEY = import.meta.env.VITE_GOOGLE_PLACE_API_KEY;
-  const LEGACY_PHOTO_URL =
-    "https://maps.googleapis.com/maps/api/place/photo" +
-    "?maxwidth=500" +
-    "&photoreference={PHOTO_REF}" +
-    `&key=${API_KEY}`;
+const API_KEY = import.meta.env.VITE_GOOGLE_PLACE_API_KEY
+const PLACE_PHOTO = (ref) =>
+  `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${encodeURIComponent(
+    ref
+  )}&key=${API_KEY}`
 
-  function HotelCardItem({ hotel }) {
-    const [photoUrl, setPhotoUrl] = useState(null);
+/** Placeholder local (public/placeholder.png) */
+const FALLBACK = '/placeholder.png'
 
-    const query =
-      hotel?.hotelName && hotel?.hotelAddress
-        ? `${hotel.hotelName}, ${hotel.hotelAddress}`
-        : null;
+export default function HotelCardItem({ hotel }) {
+  const {
+    hotelName,
+    hotelAddress = 'Adresse indisponible',
+    price,
+    rating,
+  } = hotel || {}
 
-    useEffect(() => {
-      if (!query) return;
-      fetchHotelPhoto(query);
-    }, [query]);
+  const [photoUrl, setPhotoUrl] = useState(FALLBACK)
 
-    const fetchHotelPhoto = async (textQuery) => {
+  /* ----------- récupère la meilleure photo ----------- */
+  useEffect(() => {
+    let isMounted = true
+    const query = hotelName ? `${hotelName}, ${hotelAddress}` : null
+    if (!query) return
+
+    ;(async () => {
       try {
-        const resp = await GetPlaceDetails({ textQuery });
-        const fullName = resp.data.places?.[0]?.photos?.[0]?.name;
-        if (!fullName) return;
-
-        const parts = fullName.split("/photos/");
-        if (parts.length < 2) return;
-        const photoRef = parts[1];
-        const url = LEGACY_PHOTO_URL.replace(
-          "{PHOTO_REF}",
-          encodeURIComponent(photoRef)
-        );
-        setPhotoUrl(url);
+        const { data } = await GetPlaceDetails({ textQuery: query })
+        const place   = data.places?.[0]
+        const ref     = place?.photos?.[0]?.name?.split('/photos/')[1]
+        if (!ref) return
+        isMounted && setPhotoUrl(PLACE_PHOTO(ref))
       } catch (err) {
-        console.error("Erreur récupération photo hôtel :", err.response?.data || err);
+        console.warn('❌ Place photo:', err?.response?.data || err)
       }
-    };
+    })()
 
-    return (
-      <Link
-        to={
-          "https://www.google.com/maps/search/?api=1&query=" +
-          encodeURIComponent(`${hotel.hotelName}, ${hotel.hotelAddress}`)
-        }
-        target="_blank"
-        rel="noreferrer"
-      >
-        <div className="hover:scale-105 transition-all cursor-pointer">
-          <img
-            src={photoUrl || "/placeholder.png"}
-            alt={hotel.hotelName}
-            className="rounded-xl w-full h-48 object-cover"
-          />
-          <div className="my-3">
-            <h2 className="font-medium">{hotel.hotelName}</h2>
-            <h2 className="text-xs text-gray-500">📍 {hotel.hotelAddress}</h2>
-            <h2 className="text-sm">💵 {hotel.price}</h2>
-            <h2 className="text-sm">⭐ {hotel.rating}</h2>
-          </div>
-        </div>
-      </Link>
-    );
-  }
+    return () => (isMounted = false)
+  }, [hotelName, hotelAddress])
 
-  export default HotelCardItem;
+  /* ----------- lien Google Maps ----------- */
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    `${hotelName}, ${hotelAddress}`
+  )}`
+
+  return (
+    <a
+      href={mapsUrl}
+      target="_blank"
+      rel="noreferrer"
+      className="group flex flex-col rounded-2xl bg-white shadow transition hover:-translate-y-0.5 hover:shadow-lg"
+    >
+      {/* image */}
+      <div className="relative h-60 w-full overflow-hidden rounded-t-2xl">
+        <img
+          src={photoUrl}
+          alt={hotelName}
+          onError={(e) => (e.currentTarget.src = FALLBACK)}
+          className="h-full w-full object-cover transition group-hover:scale-105"
+        />
+
+        {/* badge note */}
+        {rating && (
+          <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-sm font-semibold text-gray-700 shadow">
+            <FaStar className="text-yellow-500" /> {rating}
+          </span>
+        )}
+      </div>
+
+      {/* texte */}
+      <div className="space-y-1 px-4 py-3 text-sm">
+        <h3 className="font-medium text-indigo-700 group-hover:underline">
+          {hotelName}
+        </h3>
+
+        <p className="flex items-start gap-1 text-gray-600">
+          <FaMapMarkerAlt className="mt-0.5 shrink-0 text-gray-500" />
+          {hotelAddress}
+        </p>
+
+        {price && (
+          <p className="flex items-center gap-2 rounded-full bg-gray-100 px-2 py-0.5 w-max">
+            <FaEuroSign className="text-gray-500" />
+            {price}
+          </p>
+        )}
+      </div>
+    </a>
+  )
+}

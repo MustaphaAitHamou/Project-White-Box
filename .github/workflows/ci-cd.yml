@@ -1,112 +1,149 @@
-name: CI-CD Pipeline
+name: CI‑CD Pipeline
 
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
     inputs:
-      deploy-to-prod:
-        description: "Déployer en production ?"
+      deploy-prod:
+        description: "Déployer en production ? (yes/no)"
         required: false
         default: "no"
 
+env:
+  NODE_VERSION: "20"
+  BUILD_DIR: "dist"
+  REMOTE_DIR: "/var/www/tripgenius"          # dossier sur Iglao
+  LC_ALL: "C.UTF-8"
+
 jobs:
+# ─────────────────────────────────────────────────────────────
+# 1️⃣  Build + static checks (ESLint, TypeScript)
+# ─────────────────────────────────────────────────────────────
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Install dependencies
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install deps
         run: npm ci
-      - name: Compile
+
+      - name: Lint & type‑check
+        run: npm run lint   # -> eslint + tsc --noEmit
+
+      - name: Build (Vite)
         run: npm run build
 
+      - name: Upload build artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-build
+          path: ${{ env.BUILD_DIR }}
+
+# ─────────────────────────────────────────────────────────────
+# 2️⃣  Tests unitaires  + couverture  (Vitest + Codecov)
+# ─────────────────────────────────────────────────────────────
   test:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Install dependencies
-        run: npm ci
-      - name: Run unit tests
-        run: npm test
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
 
-  lint:
+      - name: Run Vitest
+        run: npm run test -- --coverage
+        env:
+          NODE_OPTIONS: "--experimental-vm-modules"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/vitest-final.json
+          flags: unittests
+          fail_ci_if_error: true
+
+# ─────────────────────────────────────────────────────────────
+# 3️⃣  Audit performances & accessibilité  (Lighthouse CI)
+# ─────────────────────────────────────────────────────────────
+  lighthouse:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Install dependencies
-        run: npm ci
-      - name: Run Lint
-        run: npm run lint
+      - uses: actions/download-artifact@v4  # récupère build
+        with:
+          name: site-build
+          path: ${{ env.BUILD_DIR }}
 
+      - name: Install LHCI
+        run: |
+          npm install -g @lhci/cli@0.13
+          lhci collect --static-dist-dir=${{ env.BUILD_DIR }}
+          lhci upload \
+            --target=temporary-public-storage \
+            --token="${{ secrets.LHCI_TOKEN || 'unused' }}"
+
+      - name: Enforce budgets
+        run: |
+          lhci assert --assertions.preset lighthouse:no-pwa \
+            --assertions.assertionFailureLevels=error
+
+# ─────────────────────────────────────────────────────────────
+# 4️⃣  Packaging Docker (optionnel) – trace performance image
+# ─────────────────────────────────────────────────────────────
   package:
-    needs: lint
+    needs: lighthouse
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Build Docker image
-        run: docker build -t my-app:${{ github.sha }} .
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: |
+          docker build -t tripgenius:${{ github.sha }} .
+          docker image save tripgenius:${{ github.sha }} | gzip > image.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar.gz
 
-  # 🚫 Déploiement désactivé temporairement jusqu'à hébergement d'ArgoCD
+# ─────────────────────────────────────────────────────────────
+# 5️⃣  Déploiement sur Iglao  (SSH + rsync)
+# ─────────────────────────────────────────────────────────────
+  deploy-prod:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy-prod == 'yes'
+    needs: package
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: site-build
+          path: ${{ env.BUILD_DIR }}
 
-  # deploy-staging:
-  #   needs: package
-  #   runs-on: ubuntu-latest
-  #   if: github.ref == 'refs/heads/main'
-  #   steps:
-  #     - name: Install ArgoCD CLI
-  #       run: |
-  #         curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-  #         chmod +x argocd
-  #         sudo mv argocd /usr/local/bin/argocd
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.IGLAO_SSH_KEY }}
 
-  #     - name: Login to ArgoCD
-  #       run: |
-  #         argocd login "$ARGOCD_SERVER" \
-  #           --username "$ARGOCD_USERNAME" \
-  #           --password "$ARGOCD_PASSWORD" \
-  #           --insecure
-  #       env:
-  #         ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-  #         ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
-  #         ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+      - name: Add Iglao to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.IGLAO_KNOWN_HOST }}" >> ~/.ssh/known_hosts
 
-  #     - name: Deploy to Staging
-  #       run: |
-  #         argocd app sync my-app-staging
-  #         argocd app wait my-app-staging
+      - name: Rsync to server
+        run: |
+          rsync -avz --delete ${{ env.BUILD_DIR }}/ \
+            ${{ secrets.IGLAO_USER }}@${{ secrets.IGLAO_HOST }}:${{ env.REMOTE_DIR }}
 
-  # smoke-test:
-  #   needs: deploy-staging
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Run smoke tests
-  #       run: npm run smoke
-
-  # deploy-prod:
-  #   needs: smoke-test
-  #   runs-on: ubuntu-latest
-  #   if: github.event.inputs.deploy-to-prod == 'yes'
-  #   steps:
-  #     - name: Install ArgoCD CLI
-  #       run: |
-  #         curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-  #         chmod +x argocd
-  #         sudo mv argocd /usr/local/bin/argocd
-
-  #     - name: Login to ArgoCD
-  #       run: |
-  #         argocd login "$ARGOCD_SERVER" \
-  #           --username "$ARGOCD_USERNAME" \
-  #           --password "$ARGOCD_PASSWORD" \
-  #           --insecure
-  #       env:
-  #         ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-  #         ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
-  #         ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
-
-  #     - name: Deploy to Production
-  #       run: |
-  #         argocd app sync my-app-prod
-  #         argocd app wait my-app-prod
+      - name: Smoke‑test production URL
+        run: curl -f https://tripgenius.eu || exit 1

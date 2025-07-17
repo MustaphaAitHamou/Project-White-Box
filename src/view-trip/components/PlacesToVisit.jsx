@@ -25,7 +25,6 @@ export default function PlacesToVisit({ trip }) {
 
   return (
     <div className="space-y-10">
-      <h2 className="text-2xl font-bold">Itinéraire quotidien</h2>
 
       {dailyItinerary.map(({ dayNumber, theme, activities }) => {
         /*  tri explicite Breakfast→Morning→Afternoon→Evening  */

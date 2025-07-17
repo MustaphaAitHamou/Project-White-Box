@@ -3,14 +3,19 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint . --ext .js,.jsx --fix",
+
+    "clean-spaces": "node tools/strip-weird-spaces.js",
+
+    "lint": "npm run clean-spaces && eslint . --ext .js,.jsx --fix",
     "preview": "vite preview",
     "fix-tests": "node fix-eslint-tests.cjs",
     "test": "jest"
   },
+
   "dependencies": {
     "@cookie-consent/react": "^1.11.20",
     "@google/generative-ai": "^0.24.0",
@@ -36,6 +41,7 @@
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7"
   },
+
   "devDependencies": {
     "@babel/core": "^7.27.4",
     "@babel/eslint-parser": "^7.27.5",
@@ -60,6 +66,7 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "eslint-plugin-unused-imports": "^4.1.4",
     "globals": "^15.15.0",
+    "glob": "^10.3.3",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^30.0.0",
     "jest-environment-jsdom": "^30.0.0",

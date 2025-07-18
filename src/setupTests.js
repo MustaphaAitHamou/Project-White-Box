@@ -7,72 +7,26 @@
 import { createRequire } from 'module';
 global.require = createRequire(import.meta.url);
 
-module.exports = {
-  root: true,
-  parser: '@babel/eslint-parser',
-  parserOptions: {
-    requireConfigFile: false,
-    babelOptions: { presets: ['@babel/preset-react'] },
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    ecmaFeatures: { jsx: true },
-  },
-  env: {
-    browser: true,
-    es2021: true,
-  },
-  extends: [
-    'eslint:recommended',
-    'plugin:react/recommended',
-    'plugin:react-hooks/recommended',
-    'plugin:jsx-a11y/recommended',
-    'plugin:import/errors',
-    'plugin:import/warnings',
-  ],
-  plugins: ['react', 'jsx-a11y', 'import', 'unused-imports'],
-  rules: {
-    'no-unused-vars': [
-      'error',
-      {
-        varsIgnorePattern:
-          '^[A-Z_]|^(jest|describe|it|expect|beforeEach|require|__dirname|global)$',
-        args: 'none',
-      },
-    ],
-    'unused-imports/no-unused-imports': 'error',
-  },
-  settings: {
-    react: { version: 'detect' },
-  },
+/* ---------------- Polyfills utiles pour jsdom --------------------- */
+import { TextEncoder, TextDecoder } from 'util';
+if (!globalThis.TextEncoder) globalThis.TextEncoder = TextEncoder;
+if (!globalThis.TextDecoder) globalThis.TextDecoder = TextDecoder;
 
-  /* ------------------------------------------------------------------
-     Overrides spécifiques
-  ------------------------------------------------------------------ */
-  overrides: [
-    /* --- Tous les fichiers de test --------------------------------- */
-    {
-      files: [
-        '**/__tests__/**/*.js',
-        '**/__tests__/**/*.jsx',
-        '**/*.test.js',
-        '**/*.test.jsx',
-      ],
-      env: { jest: true, node: true },
-    },
-
-    /* --- setupTests.js : jest + node + global ---------------------- */
-    {
-      files: ['src/setupTests.js'],
-      env: { jest: true, node: true },
-      globals: {
-        global: 'readonly',
-      },
-    },
-
-    /* --- Fichiers de configuration Node --------------------------- */
-    {
-      files: ['vite.config.js', 'vitest.config.js', 'tailwind.config.js'],
-      env: { node: true },
-    },
-  ],
+/* ---------------- Filtrer certains console.error ------------------ */
+const originalConsoleError = console.error;
+console.error = (...args) => {
+  const msg = typeof args[0] === 'string' ? args[0] : '';
+  if (msg.includes('Photo fetch error') ||
+      msg.includes('Erreur récupération photo hôtel')) {
+    return;
+  }
+  originalConsoleError(...args);
 };
+
+/* ------------- Mocks globaux (ex. reCAPTCHA invisible) ------------ */
+jest.mock('react-google-recaptcha', () => {
+  // composant factice
+  return function DummyReCAPTCHA() {
+    return <div data-testid="recaptcha-mock" />;
+  };
+});

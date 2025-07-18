@@ -9,10 +9,7 @@ module.exports = {
     sourceType: 'module',
     ecmaFeatures: { jsx: true },
   },
-  env: {
-    browser: true,
-    es2021: true,
-  },
+  env: { browser: true, es2021: true },
   extends: [
     'eslint:recommended',
     'plugin:react/recommended',
@@ -35,9 +32,9 @@ module.exports = {
   },
   settings: { react: { version: 'detect' } },
 
-  /* ------------------------------------------------------------------
-     Overrides spécifiques
-  ------------------------------------------------------------------ */
+  /* ----------------------------------------------------------------
+     Overrides
+  ---------------------------------------------------------------- */
   overrides: [
     /* Fichiers de test */
     {
@@ -50,17 +47,17 @@ module.exports = {
       env: { jest: true, node: true },
     },
 
-    /* setupTests.js : jest + node + global + module */
+    /* setupTests.js : autoriser global & module explicitement */
     {
       files: ['src/setupTests.js'],
       env: { jest: true, node: true },
       globals: {
-        global:  'readonly',
-        module:  'readonly',
+        global: 'readonly',
+        module: 'readonly',
       },
     },
 
-    /* fichiers de config Node */
+    /* Configs Node */
     {
       files: ['vite.config.js', 'vitest.config.js', 'tailwind.config.js'],
       env: { node: true },

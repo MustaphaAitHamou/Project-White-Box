@@ -1,77 +1,69 @@
-/* .eslintrc.cjs – config ESLint complète (v9) */
+/* eslint-env node */
 module.exports = {
   root: true,
-
-  // ───────────── Parser ─────────────
-  parser: "@babel/eslint-parser",
+  parser: '@babel/eslint-parser',
   parserOptions: {
     requireConfigFile: false,
-    babelOptions: {
-      presets: ["@babel/preset-react"],
-    },
-    ecmaVersion: "latest",
-    sourceType: "module",
+    babelOptions: { presets: ['@babel/preset-react'] },
+    ecmaVersion: 'latest',
+    sourceType: 'module',
     ecmaFeatures: { jsx: true },
   },
-
-  // ───────── Environnements ─────────
-  env: { browser: true, es2021: true },
-
-  // ─────────── Extends ──────────────
+  env: {
+    browser: true,
+    es2021: true,
+  },
   extends: [
-    "eslint:recommended",
-    "plugin:react/recommended",
-    "plugin:react-hooks/recommended",
-    "plugin:jsx-a11y/recommended",
-    "plugin:import/errors",
-    "plugin:import/warnings",
-    "plugin:prettier/recommended" // facultatif si Prettier installé
+    'eslint:recommended',
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
+    'plugin:jsx-a11y/recommended',
+    'plugin:import/errors',
+    'plugin:import/warnings',
   ],
-
-  // ─────────── Plugins ──────────────
-  plugins: ["react", "jsx-a11y", "import", "unused-imports"],
-
-  // ─────────── Règles ───────────────
+  plugins: ['react', 'jsx-a11y', 'import', 'unused-imports'],
   rules: {
-    "unused-imports/no-unused-imports": "error",
-    "no-unused-vars": [
-      "error",
+    'no-unused-vars': [
+      'error',
       {
         varsIgnorePattern:
-          "^[A-Z_]|^(jest|describe|it|expect|beforeEach|require|__dirname|global)$",
-        args: "none",
+          '^[A-Z_]|^(jest|describe|it|expect|beforeEach|require|__dirname|global)$',
+        args: 'none',
       },
     ],
-    // règle temporairement désactivée — réactive‑la après nettoyage définitif
-    "no-irregular-whitespace": "off",
-    "prettier/prettier": "warn"
+    'unused-imports/no-unused-imports': 'error',
   },
+  settings: { react: { version: 'detect' } },
 
-  // ─────────── Ignorés ──────────────
-  ignorePatterns: [
-    "tools/strip-weird-spaces.js"   // script interne, pas besoin de lint
-  ],
-
-  settings: { react: { version: "detect" } },
-
-  // ─────────── Overrides tests / configs ───────────
+  /* ------------------------------------------------------------------
+     Overrides spécifiques
+  ------------------------------------------------------------------ */
   overrides: [
+    /* Fichiers de test */
     {
       files: [
-        "**/__tests__/**/*.js",
-        "**/__tests__/**/*.jsx",
-        "**/*.test.js",
-        "**/*.test.jsx"
+        '**/__tests__/**/*.js',
+        '**/__tests__/**/*.jsx',
+        '**/*.test.js',
+        '**/*.test.jsx',
       ],
       env: { jest: true, node: true },
     },
+
+    /* setupTests.js : jest + node + global + module */
     {
-      files: ["src/setupTests.js"],
+      files: ['src/setupTests.js'],
       env: { jest: true, node: true },
+      globals: {
+        global:  'readonly',
+        module:  'readonly',
+      },
     },
+
+    /* fichiers de config Node */
     {
-      files: ["vite.config.js", "vitest.config.js", "tailwind.config.js"],
+      files: ['vite.config.js', 'vitest.config.js', 'tailwind.config.js'],
       env: { node: true },
-    }
+    },
   ],
 };

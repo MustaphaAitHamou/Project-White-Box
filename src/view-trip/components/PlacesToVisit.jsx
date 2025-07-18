@@ -16,7 +16,7 @@ export default function PlacesToVisit({ trip }) {
   const destinationLabel = trip?.userSelection?.location?.label || '';
 
   if (!dailyItinerary.length) {
-    return (
+    return ( 
       <p className="rounded bg-yellow-50 p-4 text-sm text-yellow-800">
         Aucun itinéraire n’a été généré pour ce voyage.
       </p>

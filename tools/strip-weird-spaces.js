@@ -1,19 +1,20 @@
 /**
- * Remplace tous les espaces invisibles (\u00A0, \u200B…) par un
- * espace standard afin d’éviter l’erreur ESLint « no‑irregular‑whitespace ».
+ * Supprime les caractères d’espace invisibles (\u00A0, \u200B, …)
+ * pour éviter la règle ESLint : no‑irregular‑whitespace
  */
 import fs from "fs";
-import glob from "glob";
+import { globSync } from "glob";
 
-const PATTERN =
+const BAD =
   /[\u00A0\u1680\u180E\u2000-\u200F\u2028-\u202F\u205F\u3000\uFEFF]/g;
 
-const files = glob.sync("src/**/*.{js,jsx,ts,tsx}");
+// Liste tous les fichiers source à nettoyer
+const files = globSync("src/**/*.{js,jsx,ts,tsx}", { nodir: true });
 
 files.forEach((file) => {
-  const txt = fs.readFileSync(file, "utf8");
-  if (!PATTERN.test(txt)) return;
+  const text = fs.readFileSync(file, "utf8");
+  if (!BAD.test(text)) return;               // aucun caractère suspect
 
-  fs.writeFileSync(file, txt.replace(PATTERN, " "));
+  fs.writeFileSync(file, text.replace(BAD, " "));
   console.log("✅ cleaned", file);
 });

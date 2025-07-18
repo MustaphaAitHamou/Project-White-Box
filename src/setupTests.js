@@ -1,22 +1,25 @@
 /* eslint-env jest,node */
 /* eslint-disable no-unused-vars */
-/* global module, global, jest */
+/* global module, jest, require */
 
-/* ------------------------------------------------------------------ */
-/*  Jest – compatibilité CommonJS / ESM                               */
-/* ------------------------------------------------------------------ */
+import React from 'react';
 import { createRequire } from 'module';
-global.require = createRequire(import.meta.url);
+import { TextEncoder, TextDecoder } from 'util';
 
 /* ------------------------------------------------------------------ */
-/*  Polyfills utiles pour jsdom                                       */
+/* 1) Ajoute “require” dans un module ESM pour Jest                    */
 /* ------------------------------------------------------------------ */
-import { TextEncoder, TextDecoder } from 'util';
+const require = createRequire(import.meta.url);
+global.require = require;
+
+/* ------------------------------------------------------------------ */
+/* 2) Polyfills indispensables pour jsdom                             */
+/* ------------------------------------------------------------------ */
 if (!globalThis.TextEncoder) globalThis.TextEncoder = TextEncoder;
 if (!globalThis.TextDecoder) globalThis.TextDecoder = TextDecoder;
 
 /* ------------------------------------------------------------------ */
-/*  Filtrer certains console.error parasites                          */
+/* 3) Filtre certains console.error bruyants pendant les tests        */
 /* ------------------------------------------------------------------ */
 const originalConsoleError = console.error;
 console.error = (...args) => {
@@ -25,17 +28,18 @@ console.error = (...args) => {
     msg.includes('Photo fetch error') ||
     msg.includes('Erreur récupération photo hôtel')
   ) {
-    return; // on ignore ces messages pendant les tests
+    return; // Ignore ces messages spécifiques
   }
   originalConsoleError(...args);
 };
 
 /* ------------------------------------------------------------------ */
-/*  Mocks globaux                                                     */
+/* 4) Mocks globaux partagés pour toutes les suites Jest              */
 /* ------------------------------------------------------------------ */
 jest.mock('react-google-recaptcha', () => {
-  // composant factice pour tous les tests
   return function DummyReCAPTCHA() {
     return <div data-testid="recaptcha-mock" />;
   };
 });
+
+/* Ajoute ici d’autres mocks globaux si nécessaire */

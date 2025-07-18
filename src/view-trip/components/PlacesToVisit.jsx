@@ -2,7 +2,7 @@
    Itinéraire quotidien – ordre Breakfast → Evening garanti
 ------------------------------------------------------------------- */
 import React from 'react';
-import PlaceCardItem from './PlaceCardItem';
+import PlaceCardItem from '~/view-trip/components/PlaceCardItem'
 
 const SLOT_ORDER = {
   breakfast : 0,

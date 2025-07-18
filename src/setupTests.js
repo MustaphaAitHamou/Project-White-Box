@@ -1,32 +1,63 @@
 /* eslint-env jest,node */
-/* global jest */
+/* eslint-disable no-undef */
+/* global require, global, __filename, beforeAll, afterAll */
 
-import React from 'react';
-import '@testing-library/jest-dom';
-import { TextEncoder, TextDecoder } from 'util';
+///////////////////////////////////////////////////////////////////////
+// 1)  Dépendances & polyfills
+///////////////////////////////////////////////////////////////////////
+require('@testing-library/jest-dom');
 
-/* ---------- Polyfills -------------------------------------------------- */
-if (!globalThis.TextEncoder) globalThis.TextEncoder = TextEncoder;
-if (!globalThis.TextDecoder) globalThis.TextDecoder = TextDecoder;
+const { TextEncoder, TextDecoder } = require('util');
+if (!global.TextEncoder) global.TextEncoder = TextEncoder;
+if (!global.TextDecoder) global.TextDecoder = TextDecoder;
 
-/* ---------- Filtre console.error bruyant -------------------------------- */
-const originalConsoleError = console.error;
+// certains paquets ESM appellent encore `require` → on l’expose
+const { createRequire } = require('module');
+global.require = createRequire(__filename);
+
+///////////////////////////////////////////////////////////////////////
+// 2)  Mocks globaux – annule les accès réseau
+///////////////////////////////////////////////////////////////////////
+jest.mock('react-google-recaptcha', () => {
+  const React = require('react');
+  return function DummyReCAPTCHA() {
+    return React.createElement('div', { 'data-testid': 'recaptcha-mock' });
+  };
+});
+
+jest.mock('axios', () => {
+  const mock = {
+    get   : jest.fn(() => Promise.resolve({ data: {} })),
+    post  : jest.fn(() => Promise.resolve({ data: {} })),
+    create: () => mock,
+  };
+  return mock;
+});
+
+///////////////////////////////////////////////////////////////////////
+// 3)  Filtre le bruit console.warn / console.error
+///////////////////////////////////////////////////////////////////////
+const origWarn  = console.warn;
+const origError = console.error;
+
+beforeAll(() => {
+  jest.spyOn(console, 'warn').mockImplementation((...args) => {
+    const msg = String(args[0] ?? '');
+    if (/Place photo:|Photo fetch error/i.test(msg)) return; // on ignore 🔇
+    origWarn(...args);
+  });
+});
+
 console.error = (...args) => {
-  const msg = typeof args[0] === 'string' ? args[0] : '';
-  // On ignore les erreurs de fetch de photo OU de place details dans nos composants
+  const msg = String(args[0] ?? '');
   if (
     msg.includes('Photo fetch error:') ||
     msg.includes('Erreur récupération photo hôtel') ||
     msg.includes('Place details error:')
-  ) {
-    return;
-  }
-  originalConsoleError(...args);
+  ) return; // on ignore 🔇
+  origError(...args);
 };
 
-/* ---------- Mock minimal de react-google-recaptcha --------------------- */
-jest.mock('react-google-recaptcha', () => {
-  return function DummyReCAPTCHA() {
-    return <div data-testid="recaptcha-mock" />;
-  };
+afterAll(() => {
+  console.warn.mockRestore();
 });

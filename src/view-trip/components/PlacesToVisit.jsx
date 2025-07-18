@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------
-   Itinéraire quotidien – ordre Breakfast → Evening garanti
+   Itinéraire quotidien – ordre Breakfast → Evening garanti
 ------------------------------------------------------------------- */
 import React from 'react';
 import PlaceCardItem from '~/view-trip/components/PlaceCardItem'

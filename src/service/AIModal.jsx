@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------
-   Service Gemini : génération d’itinéraires + « auto‑repair » JSON
+   Service Gemini : génération d’itinéraires + « auto‑repair » JSON
 ------------------------------------------------------------------- */
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { jsonrepair }        from 'jsonrepair';
@@ -13,7 +13,7 @@ const generationConfig = {
   temperature     : 0.9,
   topP            : 0.95,
   topK            : 40,
-  /* 8192 tokens ≃ ~24 000 car. → largement suffisant pour 30+ jours */
+  /* 8192 tokens ≃ ~24 000 car. → largement suffisant pour 30+ jours */
   maxOutputTokens : 8192,
   responseMimeType: 'application/json',
 };
@@ -73,6 +73,6 @@ export async function generateTripPlan(prompt) {
 export const chatSession = {
   sendMessage: () =>
     Promise.reject(
-      new Error('chatSession obsolète : utilisez generateTripPlan()'),
+      new Error('chatSession obsolète : utilisez generateTripPlan()'),
     ),
 };

@@ -1,12 +1,20 @@
-// jest.setupEnv.js
-// ---------------------------------------------------------------------------
-// Variables d’environnement factices pour Jest. Aucune clé réelle n’est
-// nécessaire : on évite ainsi les erreurs « … API_KEY manquant ».
-// ---------------------------------------------------------------------------
+/* eslint-env node */
+/* global process, require */
 
-process.env.VITE_GOOGLE_GEMINI_AI_API_KEY = 'test-key';
-process.env.VITE_GOOGLE_PLACE_API_KEY     = 'test-key';
-process.env.VITE_GOOGLE_AUTH_CLIENT_ID    = 'test-client';
-process.env.VITE_RECAPTCHA_SITE_KEY       = 'test-recaptcha';
-process.env.VITE_RAPIDAPI_KEY             = 'test-key';
-process.env.VITE_RAPIDAPI_HOST_BOOKING    = 'booking-com.p.rapidapi.com';
+/* ------------------------------------------------------------------
+   Charge .env s’il existe (en CI le module peut manquer)
+------------------------------------------------------------------ */
+try {
+    require('dotenv').config();
+  } catch {
+    /* pas de dotenv → on continue */
+  }
+  
+  /* ------------------------------------------------------------------
+     Valeurs de secours pour éviter les “undefined” durant les tests
+  ------------------------------------------------------------------ */
+  process.env.VITE_GOOGLE_GEMINI_AI_API_KEY  ??= 'test-key';
+  process.env.VITE_RAPIDAPI_KEY              ??= 'rapid-test-key';
+  process.env.VITE_RAPIDAPI_HOST_BOOKING     ??= 'booking-com.p.rapidapi.com';
+  process.env.VITE_GOOGLE_PLACE_API_KEY      ??= 'place-test-key';
+  

@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------
-   Grille d’hôtels – clé unique + fallback « aucun »
+   Grille d’hôtels – clé unique + fallback « aucun »
 ------------------------------------------------------------------- */
 import React from 'react'
 import HotelCardItem from './HotelCardItem'
@@ -11,7 +11,7 @@ export default function Hotels({ trip }) {
     const label = trip?.userSelection?.location?.label || 'la destination'
     return (
       <p className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
-        aucun hôtel n’a été trouvé pour « {label} ».
+        aucun hôtel n’a été trouvé pour « {label} ».
       </p>
     )
   }

@@ -11,13 +11,13 @@ export const SelectTravelesList = [
   ];
   
   export const SelectBudgetOptions = [
-    { id: 1, title: 'Bon marché', desc: '€ 30‑80',  icon: '🪙' },
-    { id: 2, title: 'Modéré',     desc: '€ 80‑200', icon: '💸' },
-    { id: 3, title: 'Luxe',       desc: '€ 200+',   icon: '💰' },
+    { id: 1, title: 'Bon marché', desc: '€ 30‑80',  icon: '🪙' },
+    { id: 2, title: 'Modéré',     desc: '€ 80‑200', icon: '💸' },
+    { id: 3, title: 'Luxe',       desc: '€ 200+',   icon: '💰' },
   ];
   
   /* ------------------------------------------------------------------
-     PROMPT IA – illimité en jours + 4 créneaux par jour
+     PROMPT IA – illimité en jours + 4 créneaux par jour
   ------------------------------------------------------------------- */
   export const AI_PROMPT = `
   You are a travel‑planner API.
@@ -25,7 +25,7 @@ export const SelectTravelesList = [
   =============================================================
   INPUTS
     • CITY ............. {location}
-    • TOTAL_DAYS ....... {totalDays}  (integer ≥ 1, no hard upper‑limit)
+    • TOTAL_DAYS ....... {totalDays}  (integer ≥ 1, no hard upper‑limit)
     • TRAVEL_PARTY ..... {traveler}
     • BUDGET_CATEGORY .. {budget}  (Bon marché | Modéré | Luxe)
   
@@ -51,25 +51,25 @@ export const SelectTravelesList = [
           {
             "placeName":       "Le Comptoir du Marché",
             "details":         "Petit‑déj local avec croissants …",
-            "timeToTravel":    "5 min",
+            "timeToTravel":    "5 min",
             "bestTimeToVisit": "Breakfast"
           },
           {
             "placeName":       "Musée Matisse",
             "details":         "Matinée culturelle …",
-            "timeToTravel":    "10 min",
+            "timeToTravel":    "10 min",
             "bestTimeToVisit": "Morning"
           },
           {
             "placeName":       "Vieux‑Nice",
             "details":         "Balade dans le quartier …",
-            "timeToTravel":    "15 min",
+            "timeToTravel":    "15 min",
             "bestTimeToVisit": "Afternoon"
           },
           {
             "placeName":       "Colline du Château",
             "details":         "Vue panoramique au coucher du soleil …",
-            "timeToTravel":    "20 min",
+            "timeToTravel":    "20 min",
             "bestTimeToVisit": "Evening"
           }
         ]
@@ -82,7 +82,7 @@ export const SelectTravelesList = [
     • For each day, **activities.length = 4** with one activity per slot:
           Breakfast · Morning · Afternoon · Evening
     • bestTimeToVisit MUST be exactly one of those four labels.
-    • Use real POIs inside CITY or ≤ 20 km.
+    • Use real POIs inside CITY or ≤ 20 km.
     • Stay within the provided BUDGET_CATEGORY when giving prices.
     • DO NOT output anything else than the pure JSON above (no prose, no code‑block fences).
   =============================================================

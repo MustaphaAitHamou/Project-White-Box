@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------
    src/components/custom/Header.jsx
-   – Gestion utilisateur + export JSON complet des voyages
+   – Gestion utilisateur + export JSON complet des voyages
 ------------------------------------------------------------------- */
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "../ui/button";
@@ -44,7 +44,7 @@ import ReCAPTCHA from "react-google-recaptcha";
 /*  utils                                                               */
 /* ------------------------------------------------------------------ */
 
-/** Déclenche un téléchargement (client‐side, sans lib externe) */
+/** Déclenche un téléchargement (client‐side, sans lib externe) */
 function downloadJSON(obj, filename = "tripgenius-data.json") {
   const blob = new Blob([JSON.stringify(obj, null, 2)], {
     type: "application/json",
@@ -208,7 +208,7 @@ export default function Header() {
         toast.info("Aucun voyage à exporter.");
       } else {
         downloadJSON({ user, trips }, "tripgenius-data.json");
-        toast.success("Export JSON téléchargé !");
+        toast.success("Export JSON téléchargé !");
       }
     } catch (err) {
       console.error(err);
@@ -297,7 +297,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* ---------------- Dialog Login ---------------- */}
+      {/* ---------------- Dialog Login ---------------- */}
       <Dialog open={showLogin} onOpenChange={setShowLogin}>
         <DialogOverlay />
         <DialogContent>
@@ -360,7 +360,7 @@ export default function Header() {
         </DialogContent>
       </Dialog>
 
-      {/* -------------- Dialog suppression -------------- */}
+      {/* -------------- Dialog suppression -------------- */}
       <Dialog open={showDelete} onOpenChange={setShowDelete}>
         <DialogOverlay />
         <DialogContent className="max-w-md">
@@ -369,7 +369,7 @@ export default function Header() {
               Suppression du compte
             </DialogTitle>
             <DialogDescription className="text-center mb-4">
-              Saisis ton e‑mail pour confirmer :
+              Saisis ton e‑mail pour confirmer :
             </DialogDescription>
           </DialogHeader>
 

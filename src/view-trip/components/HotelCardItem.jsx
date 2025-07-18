@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------
-   Carte Hôtel – image robuste + badge note + détails complets
+   Carte Hôtel – image robuste + badge note + détails complets
 ------------------------------------------------------------------- */
 import React, { useEffect, useState } from 'react'
 import { FaMapMarkerAlt, FaEuroSign, FaStar } from 'react-icons/fa'
@@ -45,7 +45,7 @@ export default function HotelCardItem({ hotel }) {
     return () => (isMounted = false)
   }, [hotelName, hotelAddress])
 
-  /* ----------- lien Google Maps ----------- */
+  /* ----------- lien Google Maps ----------- */
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     `${hotelName}, ${hotelAddress}`
   )}`

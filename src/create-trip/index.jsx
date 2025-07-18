@@ -1,19 +1,18 @@
 /* ------------------------------------------------------------------
    src/create-trip/index.jsx
-   Page : Création d’un voyage (illimité en jours)
 ------------------------------------------------------------------- */
-import React, { useState } from 'react'
-import axios from 'axios'
-import GooglePlacesAutocomplete from 'react-google-places-autocomplete'
+import React, { useState } from 'react';
+import axios from 'axios';
+import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import {
   AI_PROMPT,
   SelectBudgetOptions,
   SelectTravelesList,
-} from '~/constants/options'
-import { Input } from '~/components/ui/input'
-import { Button } from '~/components/ui/button'
-import { toast } from 'sonner'
-import { generateTripPlan } from '~/service/AIModal'
+} from '~/constants/options';
+import { Input } from '~/components/ui/input';
+import { Button } from '~/components/ui/button';
+import { toast } from 'sonner';
+import { generateTripPlan } from '~/service/AIModal';
 import {
   Dialog,
   DialogOverlay,
@@ -22,98 +21,100 @@ import {
   DialogTitle,
   DialogDescription,
   DialogClose,
-} from '~/components/ui/dialog'
-import { FcGoogle } from 'react-icons/fc'
-import { X } from 'lucide-react'
-import { useGoogleLogin } from '@react-oauth/google'
-import { doc, setDoc } from 'firebase/firestore'
-import { db } from '~/service/firebaseConfig'
-import { useNavigate } from 'react-router-dom'
-import Footer from '~/view-trip/components/Footer'
-import { AiOutlineLoading3Quarters } from 'react-icons/ai'
+} from '~/components/ui/dialog';
+import { FcGoogle } from 'react-icons/fc';
+import { X } from 'lucide-react';
+import { useGoogleLogin } from '@react-oauth/google';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '~/service/firebaseConfig';
+import { useNavigate } from 'react-router-dom';
+import Footer from '~/view-trip/components/Footer';
+import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 
 export default function CreateTrip() {
   /* ---------- état local ---------- */
-  const [place, setPlace] = useState(null)
-  const [formData, setFormData] = useState({})
-  const [openDialog, setOpenDialog] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [consentChecked, setConsentChecked] = useState(false)
-  const [consentError, setConsentError] = useState('')
+  const [place, setPlace] = useState(null);
+  const [formData, setFormData] = useState({});
+  const [openDialog, setOpenDialog] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [consentError, setConsentError] = useState('');
 
-  const navigate = useNavigate()
-  const update   = (k, v) => setFormData((p) => ({ ...p, [k]: v }))
+  const navigate = useNavigate();
+  const update = (k, v) => setFormData((p) => ({ ...p, [k]: v }));
 
   /* ---------- OAuth Google ---------- */
   const login = useGoogleLogin({
     onSuccess: async ({ access_token }) => {
       try {
-        /* profil Google */
         const { data } = await axios.get(
           `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${access_token}`,
-        )
-        localStorage.setItem('user', JSON.stringify(data))
-        window.dispatchEvent(new Event('userChanged'))
+        );
+        localStorage.setItem('user', JSON.stringify(data));
+        window.dispatchEvent(new Event('userChanged'));
 
-        /* enregistre le consentement RGPD */
         await setDoc(doc(db, 'consents', data.id), {
           email: data.email,
           consent: true,
           timestamp: new Date().toISOString(),
-        })
+        });
 
-        setOpenDialog(false)
-        generateTrip()
+        setOpenDialog(false);
+        generateTrip(); // relance avec l’utilisateur connecté
       } catch {
-        toast.error('Impossible de récupérer le profil Google')
+        toast.error('Impossible de récupérer le profil Google');
       }
     },
-    onError : () => toast.error("Échec de l'authentification Google"),
-    ux_mode : 'popup',
-    scope   : 'openid email profile',
-  })
+    onError: () => toast.error("Échec de l'authentification Google"),
+    ux_mode: 'popup',
+    scope: 'openid email profile',
+  });
 
   /* ---------- Appel IA ---------- */
   async function generateTrip() {
-    if (!localStorage.getItem('user')) return setOpenDialog(true)
+    setLoading(true); // spinner dès le clic
 
-    const { location, noOfDays, budget, traveler } = formData
-    if (!location || !noOfDays || !budget || !traveler)
-      return toast.error('Veuillez remplir tous les champs')
+    if (!localStorage.getItem('user')) {
+      setOpenDialog(true);
+      return;
+    }
 
-    setLoading(true)
+    const { location, noOfDays, budget, traveler } = formData;
+    if (!location || !noOfDays || !budget || !traveler) {
+      toast.error('Veuillez remplir tous les champs');
+      setLoading(false);
+      return;
+    }
 
-    /* interpolation du prompt */
     const prompt = AI_PROMPT
       .replace('{location}', location.label)
       .replace(/{totalDays}/g, noOfDays)
       .replace('{traveler}', traveler)
-      .replace('{budget}', budget)
+      .replace('{budget}', budget);
 
     try {
-      const res = await generateTripPlan(prompt)
+      const res = await generateTripPlan(prompt);
 
-      const id = Date.now().toString()
+      const id = Date.now().toString();
       await setDoc(doc(db, 'AITrips', id), {
         userSelection: formData,
-        TripData     : res,
-        userEmail    : JSON.parse(localStorage.getItem('user')).email,
+        TripData: res,
+        userEmail: JSON.parse(localStorage.getItem('user')).email,
         id,
-      })
+      });
 
-      navigate(`/view-trip/${id}`)
+      navigate(`/view-trip/${id}`);
     } catch (err) {
-      console.error(err)
-      toast.error('Erreur lors de la génération')
+      console.error(err);
+      toast.error('Erreur lors de la génération');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   /* ------------------------- UI ------------------------- */
   return (
     <>
-      {/* ╔══════════════ Wrapper gradient ══════════════╗ */}
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700">
         <section className="py-16 px-6 md:px-20">
           <div className="mx-auto max-w-5xl bg-white/80 backdrop-blur-lg border border-white/30 rounded-3xl p-10 shadow-2xl">
@@ -135,8 +136,8 @@ export default function CreateTrip() {
                     selectProps={{
                       value: place,
                       onChange: (v) => {
-                        setPlace(v)
-                        update('location', v)
+                        setPlace(v);
+                        update('location', v);
                       },
                       className: 'mt-2 rounded-lg border-gray-300',
                     }}
@@ -151,7 +152,7 @@ export default function CreateTrip() {
                   <Input
                     type="number"
                     min={1}
-                    placeholder="5"
+                    placeholder="Ex. 5"
                     className="w-32 mt-2"
                     onChange={(e) => update('noOfDays', e.target.value)}
                   />
@@ -176,9 +177,7 @@ export default function CreateTrip() {
                         }`}
                       >
                         <span className="text-2xl">{b.icon}</span>
-                        <span className="text-xs font-medium">
-                          {b.title}
-                        </span>
+                        <span className="text-xs font-medium">{b.title}</span>
                       </button>
                     ))}
                   </div>
@@ -200,9 +199,7 @@ export default function CreateTrip() {
                         }`}
                       >
                         <span className="text-2xl">{t.icon}</span>
-                        <span className="text-xs font-medium">
-                          {t.title}
-                        </span>
+                        <span className="text-xs font-medium">{t.title}</span>
                       </button>
                     ))}
                   </div>
@@ -221,7 +218,10 @@ export default function CreateTrip() {
                 {loading ? (
                   <>
                     <AiOutlineLoading3Quarters className="animate-spin mr-2" />
-                    Création…
+                    <span className="sr-only" aria-live="polite">
+                      Veuillez patienter…
+                    </span>
+                    Création en cours
                   </>
                 ) : (
                   'Générer'
@@ -231,7 +231,7 @@ export default function CreateTrip() {
           </div>
         </section>
 
-        {/* ╠════ Dialog Connexion Google ════╣ */}
+        {/* ---------- Dialog Connexion Google ---------- */}
         <Dialog open={openDialog} onOpenChange={setOpenDialog}>
           <DialogOverlay />
           <DialogContent>
@@ -250,8 +250,8 @@ export default function CreateTrip() {
                 type="checkbox"
                 checked={consentChecked}
                 onChange={(e) => {
-                  setConsentChecked(e.target.checked)
-                  setConsentError('')
+                  setConsentChecked(e.target.checked);
+                  setConsentError('');
                 }}
               />
               <label htmlFor="rgpd" className="text-sm text-gray-700">
@@ -265,10 +265,10 @@ export default function CreateTrip() {
             <Button
               onClick={() => {
                 if (!consentChecked) {
-                  setConsentError('Merci d’accepter les conditions')
-                  return
+                  setConsentError('Merci d’accepter les conditions');
+                  return;
                 }
-                login()
+                login();
               }}
               className="w-full mt-6 flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white"
             >
@@ -289,8 +289,7 @@ export default function CreateTrip() {
         </Dialog>
       </div>
 
-      {/* ╚════════════════ Footer ═════════════════╝ */}
       <Footer />
     </>
-  )
+  );
 }

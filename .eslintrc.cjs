@@ -1,66 +1,27 @@
-/* eslint-env node */
-module.exports = {
-  root: true,
-  parser: '@babel/eslint-parser',
-  parserOptions: {
-    requireConfigFile: false,
-    babelOptions: { presets: ['@babel/preset-react'] },
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    ecmaFeatures: { jsx: true },
-  },
-  env: { browser: true, es2021: true },
-  extends: [
-    'eslint:recommended',
-    'plugin:react/recommended',
-    'plugin:react-hooks/recommended',
-    'plugin:jsx-a11y/recommended',
-    'plugin:import/errors',
-    'plugin:import/warnings',
-  ],
-  plugins: ['react', 'jsx-a11y', 'import', 'unused-imports'],
-  rules: {
-    'no-unused-vars': [
-      'error',
-      {
-        varsIgnorePattern:
-          '^[A-Z_]|^(jest|describe|it|expect|beforeEach|require|__dirname|global)$',
-        args: 'none',
-      },
-    ],
-    'unused-imports/no-unused-imports': 'error',
-  },
-  settings: { react: { version: 'detect' } },
+/* eslint-env jest,node */
 
-  /* ----------------------------------------------------------------
-     Overrides
-  ---------------------------------------------------------------- */
-  overrides: [
-    /* Fichiers de test */
-    {
-      files: [
-        '**/__tests__/**/*.js',
-        '**/__tests__/**/*.jsx',
-        '**/*.test.js',
-        '**/*.test.jsx',
-      ],
-      env: { jest: true, node: true },
-    },
+const { createRequire } = require('module');
+global.require = createRequire(__filename);
 
-    /* setupTests.js : autoriser global & module explicitement */
-    {
-      files: ['src/setupTests.js'],
-      env: { jest: true, node: true },
-      globals: {
-        global: 'readonly',
-        module: 'readonly',
-      },
-    },
+/* 1) Polyfills jsdom */
+const { TextEncoder, TextDecoder } = require('util');
+if (!global.TextEncoder) global.TextEncoder = TextEncoder;
+if (!global.TextDecoder) global.TextDecoder = TextDecoder;
 
-    /* Configs Node */
-    {
-      files: ['vite.config.js', 'vitest.config.js', 'tailwind.config.js'],
-      env: { node: true },
-    },
-  ],
+/* 2) Matchers jest‑dom récents */
+require('@testing-library/jest-dom');
+
+/* 3) Mocks globaux */
+jest.mock('react-google-recaptcha', () => {
+  const React = require('react');
+  return () =>
+    React.createElement('div', { 'data-testid': 'recaptcha-mock' });
+});
+
+/* 4) Filtre de logs optionnel */
+const origErr = console.error;
+console.error = (...args) => {
+  const msg = String(args[0] ?? '');
+  if (msg.includes('Photo fetch error')) return;
+  origErr(...args);
 };

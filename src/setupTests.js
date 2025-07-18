@@ -1,4 +1,12 @@
-/* eslint-env node */
+/* eslint-env jest,node */
+/* global module */
+
+/* ------------------------------------------------------------------ */
+/*  Jest – compatibilité CommonJS dans un projet ESM                  */
+/* ------------------------------------------------------------------ */
+import { createRequire } from 'module';
+global.require = createRequire(import.meta.url);
+
 module.exports = {
   root: true,
   parser: '@babel/eslint-parser',

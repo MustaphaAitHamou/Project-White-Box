@@ -13,11 +13,11 @@ const SLOT_ORDER = {
 
 export default function PlacesToVisit({ trip }) {
   const { dailyItinerary = [] } = trip?.TripData || {};
-  const destinationLabel = trip?.userSelection?.location?.label || '';
+  const destinationLabel = trip?.userSelection?.location?.label || ''; 
 
   if (!dailyItinerary.length) {
     return ( 
-      <p className="rounded bg-yellow-50 p-4 text-sm text-yellow-800">
+      <p className="rounded bg-yellow-50 p-4 text-sm text-yellow-800"> 
         Aucun itinéraire n’a été généré pour ce voyage.
       </p>
     );

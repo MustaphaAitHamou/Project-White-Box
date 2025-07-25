@@ -1,112 +1,67 @@
- 
- 
-import React from 'react';
-import { MemoryRouter } from 'react-router-dom';
-import MyTrips from '../my-trips/'; // ajuste si différent
+// src/my-trips/index.jsx
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '~/service/firebaseConfig';
 
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+export default function MyTrips() {
+  const [trips, setTrips] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-// ✅ Corriger l'import selon ton arborescence réelle
+  const email = (() => {
+    try { return JSON.parse(localStorage.getItem('user'))?.email; } catch { return null; }
+  })();
 
-// Mock Firebase Firestore
-vi.mock('firebase/firestore', async () => {
-  const actual = await vi.importActual('firebase/firestore');
-  return {
-    ...actual,
-    collection: vi.fn(),
-    query: vi.fn(),
-    where: vi.fn(),
-    getDocs: vi.fn(),
-  };
-});
+  useEffect(() => {
+    (async () => {
+      try {
+        const baseCol = collection(db, 'AITrips');
+        const q = email ? query(baseCol, where('user.email', '==', email)) : baseCol;
+        const snap = await getDocs(q);
+        setTrips(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [email]);
 
-import { getDocs } from 'firebase/firestore';
+  if (loading) return <p className="py-20 text-center">Chargement…</p>;
 
-// Mock useNavigate
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => vi.fn(),
-  };
-});
+  if (!trips.length) {
+    return (
+      <div className="text-center space-y-4 py-20">
+        <p>Aucun voyage trouvé</p>
+        <Link
+          to="/create-trip"
+          className="inline-block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        >
+          Créer un nouveau voyage
+        </Link>
+      </div>
+    );
+  }
 
-// Mock localStorage
-beforeEach(() => {
-  localStorage.setItem(
-    'user',
-    JSON.stringify({ email: 'test@example.com' })
+  return (
+    <div className="max-w-5xl mx-auto px-6 py-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {trips.map((t) => {
+        const label  = t?.userSelection?.location?.label || 'Voyage';
+        const days   = t?.userSelection?.noOfDays;
+        const budget = t?.userSelection?.budget;
+        return (
+          <Link
+            key={t.id}
+            to={`/view-trip/${t.id}`}
+            className="block rounded-xl bg-white shadow p-4 hover:shadow-md transition"
+          >
+            <h3 className="font-semibold text-indigo-700">{label}</h3>
+            <p className="text-sm text-gray-600">
+              {days ? `${days} jours` : ''}{budget ? ` • ${budget}` : ''}
+            </p>
+          </Link>
+        );
+      })}
+    </div>
   );
-});
-
-describe('🧳 MyTrips', () => {
-  it('affiche un message si aucun voyage trouvé', async () => {
-    getDocs.mockResolvedValueOnce({ docs: [] });
-
-    render(
-      <MemoryRouter>
-        <MyTrips />
-      </MemoryRouter>
-    );
-
-    expect(await screen.findByText(/aucun voyage trouvé/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /créer un nouveau voyage/i })).toBeInTheDocument();
-  });
-
-  it('affiche un voyage s’il est trouvé dans Firestore', async () => {
-    getDocs.mockResolvedValueOnce({
-      docs: [
-        {
-          id: 'trip42',
-          data: () => ({
-            userSelection: {
-              location: { label: 'Berlin' },
-              noOfDays: 3,
-              budget: 'Bon marché',
-              travelCompanion: 'Solo',
-            },
-          }),
-        },
-      ],
-    });
-
-    render(
-      <MemoryRouter>
-        <MyTrips />
-      </MemoryRouter>
-    );
-
-    expect(await screen.findByText(/Berlin/i)).toBeInTheDocument();
-    expect(screen.getByText(/3 jours/i)).toBeInTheDocument();
-    expect(screen.getByText(/Bon marché/i)).toBeInTheDocument();
-    expect(screen.getByText(/Solo/i)).toBeInTheDocument();
-  });
-
-  it('redirige vers le voyage au clic', async () => {
-    getDocs.mockResolvedValueOnce({
-      docs: [
-        {
-          id: 'trip42',
-          data: () => ({
-            userSelection: {
-              location: { label: 'Berlin' },
-              noOfDays: 2,
-              budget: 'Moyen',
-              travelCompanion: 'Solo',
-            },
-          }),
-        },
-      ],
-    });
-
-    render(
-      <MemoryRouter>
-        <MyTrips />
-      </MemoryRouter>
-    );
-
-    const card = await screen.findByText((text) => text.includes('Berlin'));
-    expect(card.closest('a')).toHaveAttribute('href', '/view-trip/trip42');
-  });
-});
+}

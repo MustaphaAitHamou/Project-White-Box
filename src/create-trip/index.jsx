@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useGoogleLogin } from '@react-oauth/google';
-import Footer from '~/components/custom/Footer.jsx';
+import Footer from '~/view-trip/components/Footer.jsx';
 
 const BUDGETS = [
   { key: 'cheap', icon: '🪙', label: 'Bon marché' },

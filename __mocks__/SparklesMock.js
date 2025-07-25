@@ -1,2 +1,5 @@
-export const SparklesCore = () => <div data-testid="sparkles-mock" />;
-export default SparklesCore;
+import React from 'react';
+
+export default function SparklesCoreMock(props) {
+  return <div data-testid="sparkles" {...props} />;
+}

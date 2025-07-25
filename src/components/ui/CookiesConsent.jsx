@@ -1,5 +1,4 @@
-// src/components/ui/CookieConsent.jsx
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 const COOKIE_CATEGORIES = {
   necessary : 'Fonctionnels',

@@ -1,6 +1,6 @@
 /* eslint-env browser, node */
+/* global process */
 
-// ❌ PAS de import.meta ici, jamais.
 const g = typeof globalThis !== 'undefined' ? globalThis : {};
 const p = typeof process !== 'undefined' ? process.env : {};
 

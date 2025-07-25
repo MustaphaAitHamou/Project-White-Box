@@ -1,5 +1,6 @@
 /* src/setupTests.js */
 /* eslint-env jest, node */
+/* eslint-disable react/display-name, react/prop-types */
 
 import React from "react";
 import "@testing-library/jest-dom";

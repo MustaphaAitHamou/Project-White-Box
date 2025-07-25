@@ -1,5 +1,6 @@
 /* eslint-env browser */
 import React, { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import { FaMapLocationDot } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import { Button } from '~/components/ui/button';
@@ -87,3 +88,11 @@ export default function PlaceCardItem({
     </div>
   );
 }
+
+PlaceCardItem.propTypes = {
+  placeName        : PropTypes.string,
+  details          : PropTypes.string,
+  timeToTravel     : PropTypes.string,
+  slotLabel        : PropTypes.string,
+  destinationLabel : PropTypes.string,
+};

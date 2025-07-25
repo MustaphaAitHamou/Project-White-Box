@@ -1,7 +1,6 @@
-/* ------------------------------------------------------------------
-   Liste d’hôtels pour un voyage
-------------------------------------------------------------------- */
-import PropTypes        from 'prop-types';
+import React from 'react';
+import PropTypes from 'prop-types';
+import HotelCardItem from './HotelCardItem';
 
 export default function Hotels({ trip }) {
   const hotels = trip?.TripData?.hotelOptions || [];
@@ -13,8 +12,11 @@ export default function Hotels({ trip }) {
     <section className="space-y-6">
       <h3 className="text-xl font-semibold">Hébergements recommandés</h3>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {hotels.map((h) => (
-          <HotelCardItem key={h.id || h.name} hotel={{ ...h, destination: dest }} />
+        {hotels.map((h, i) => (
+          <HotelCardItem
+            key={h.id || h.name || i}
+            hotel={{ ...h, destination: dest }}
+          />
         ))}
       </div>
     </section>

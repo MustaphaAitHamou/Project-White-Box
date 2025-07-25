@@ -1,5 +1,10 @@
-// src/components/custom/Hero.jsx
-
+ 
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '~/components/ui/button';
+// Si tu as ces composants quelque part, importe-les. Sinon on les stubbe pour l'eslint :
+const SparklesCore = SparklesCore || (() => null);
+const BackgroundBeams = BackgroundBeams || (() => null);
 
 export default function Hero() {
   return (

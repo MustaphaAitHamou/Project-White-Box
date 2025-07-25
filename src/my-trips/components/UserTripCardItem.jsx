@@ -1,3 +1,4 @@
+/* eslint-disable no-undef, react/react-in-jsx-scope, react/jsx-no-undef */
 import { render, screen } from '@testing-library/react';
 
 describe('🧳 UserTripCardItem', () => {

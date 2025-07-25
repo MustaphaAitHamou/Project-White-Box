@@ -64,7 +64,7 @@ export default function Header() {
   const [agree, setAgree] = useState(false);
   const [error, setError] = useState('');
 
-  const recaptchaRef = useRef(null);
+  const RECAPTCHA_REF = useRef(null)
 
   // Google login hook
   const login = useGoogleLogin({

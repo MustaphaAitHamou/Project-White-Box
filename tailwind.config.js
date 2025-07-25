@@ -1,32 +1,32 @@
 /* eslint-env node */
+ 
+const animate = require('tailwindcss-animate'); // ✅ en CJS pour éviter d'autres soucis
+
 /** @type {import('tailwindcss').Config} */
-
-import animate from 'tailwindcss-animate'
-
-export default {
+module.exports = {
   darkMode: ['class'],                      // bascule avec .dark sur <html>
   content: ['./src/**/*.{js,jsx,ts,tsx}'],  // parcours de toutes les vues
   theme: {
     extend: {
-      /* ----- Design tokens (HSL) ----- */
+      /* ----- Design tokens (HSL) ----- */
       colors: {
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
-        /*  tokens de bordures */
-        border: 'hsl(var(--border))',
-        ring  : 'hsl(var(--ring))',
+        background : 'hsl(var(--background))',
+        foreground : 'hsl(var(--foreground))',
+        /*  tokens de bordures */
+        border : 'hsl(var(--border))',
+        ring   : 'hsl(var(--ring))',
 
         primary: {
-          DEFAULT    : 'hsl(var(--primary))',
-          foreground : 'hsl(var(--primary-foreground))',
+          DEFAULT     : 'hsl(var(--primary))',
+          foreground  : 'hsl(var(--primary-foreground))',
         },
         secondary: {
-          DEFAULT    : 'hsl(var(--secondary))',
-          foreground : 'hsl(var(--secondary-foreground))',
+          DEFAULT     : 'hsl(var(--secondary))',
+          foreground  : 'hsl(var(--secondary-foreground))',
         },
         destructive: {
-          DEFAULT    : 'hsl(var(--destructive))',
-          foreground : 'hsl(var(--destructive-foreground))',
+          DEFAULT     : 'hsl(var(--destructive))',
+          foreground  : 'hsl(var(--destructive-foreground))',
         },
       },
 
@@ -39,6 +39,6 @@ export default {
     },
   },
   plugins: [
-    animate,                                // …et toutes tes autres lib plugins
+    animate, // …et toutes tes autres lib plugins
   ],
-}
+};

@@ -1,2 +1,5 @@
-export const BackgroundBeams = () => <div data-testid="beams-mock" />;
-export default BackgroundBeams;
+import React from 'react';
+
+export default function BackgroundBeamsMock(props) {
+  return <div data-testid="bg-beams" {...props} />;
+}

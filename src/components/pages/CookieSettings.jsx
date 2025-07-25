@@ -1,4 +1,4 @@
-// src/components/pages/CookieSettings.jsx
+import React from 'react';
 
 export default function CookieSettings() {
   return (

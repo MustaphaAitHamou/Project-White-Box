@@ -1,3 +1,8 @@
+import React from 'react';
+import InfoSection   from '../components/InfoSection';
+import Hotels        from '../components/Hotels';
+import PlacesToVisit from '../components/PlacesToVisit';
+import Footer        from '../components/Footer';
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { toast } from "sonner"

@@ -1,3 +1,4 @@
+/* eslint-disable react/display-name, react/prop-types */
 /* eslint-env jest */
 import React from 'react';
 import { render, screen } from '@testing-library/react';

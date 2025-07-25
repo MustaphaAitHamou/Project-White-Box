@@ -1,4 +1,8 @@
-// src/__tests__/TripList.test.jsx
+ 
+ 
+import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
+import MyTrips from '../my-trips/'; // ajuste si différent
 
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';

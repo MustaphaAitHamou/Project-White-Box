@@ -1,5 +1,6 @@
 /* eslint-env browser */
 import React, { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import { FaMapMarkerAlt, FaEuroSign, FaStar } from 'react-icons/fa';
 import { GetPlaceDetails } from '~/service/GlobalApi';
 import env from '~/lib/env';
@@ -86,3 +87,13 @@ export default function HotelCardItem({ hotel }) {
     </a>
   );
 }
+
+HotelCardItem.propTypes = {
+  hotel: PropTypes.shape({
+    hotelName: PropTypes.string,
+    displayName: PropTypes.string,
+    hotelAddress: PropTypes.string,
+    price: PropTypes.string,
+    rating: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  }),
+};

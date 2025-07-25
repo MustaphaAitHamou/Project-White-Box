@@ -1,27 +1,30 @@
-/* eslint-env jest,node */
+/* eslint-env node, jest */
+/* eslint-disable no-undef */
+const path = require('path');
 
-const { createRequire } = require('module');
-global.require = createRequire(__filename);
+global.__filename = __filename; // évite no-undef si utilisé plus bas
+global.rootDir = path.resolve(__dirname);
 
-/* 1) Polyfills jsdom */
-const { TextEncoder, TextDecoder } = require('util');
-if (!global.TextEncoder) global.TextEncoder = TextEncoder;
-if (!global.TextDecoder) global.TextDecoder = TextDecoder;
+const js = require('@eslint/js');
 
-/* 2) Matchers jest‑dom récents */
-require('@testing-library/jest-dom');
-
-/* 3) Mocks globaux */
-jest.mock('react-google-recaptcha', () => {
-  const React = require('react');
-  return () =>
-    React.createElement('div', { 'data-testid': 'recaptcha-mock' });
-});
-
-/* 4) Filtre de logs optionnel */
-const origErr = console.error;
-console.error = (...args) => {
-  const msg = String(args[0] ?? '');
-  if (msg.includes('Photo fetch error')) return;
-  origErr(...args);
+module.exports = {
+  root: true,
+  ignorePatterns: ['dist/', 'coverage/', 'node_modules/', 'eslint.config.cjs'],
+  env: {
+    browser: true,
+    es2021: true,
+    node: true,
+    jest: true,
+  },
+  extends: [js.configs.recommended, 'plugin:react/recommended'],
+  parserOptions: {
+    ecmaVersion: 2022,
+    sourceType: 'module',
+  },
+  settings: {
+    react: { version: 'detect' },
+  },
+  rules: {
+    'react/react-in-jsx-scope': 'off',
+  },
 };

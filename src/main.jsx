@@ -1,18 +1,28 @@
-  /* ------------------------------------------------------------------ */
-  /*  src/main.jsx – point d’entrée                                     */
-  /* ------------------------------------------------------------------ */
+/* eslint-env browser */
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 
-  /* eslint-env browser */
-  
-  import ReactDOM                   from 'react-dom/client';
-  import './index.css';
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Outlet,
+} from 'react-router-dom';
 
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { Toaster } from 'sonner';
 
+import Header         from './components/custom/Header';
+import CookieConsent  from './components/ui/CookiesConsent';
+import App            from './App';
+import CreateTrip     from './create-trip';
+import ViewTrip       from './view-trip/[tripId]';
+import MyTrips        from './my-trips';
+import PrivacyPolicy  from './components/pages/PrivacyPolicy';
+import LegalMentions  from './components/pages/LegalMentions';
+import CookieSettings from './components/pages/CookieSettings';
+import Sitemap        from './components/pages/Sitemap';
 
-  import {
-    createBrowserRouter,
-  } from 'react-router-dom';
-
+import './index.css';
   /* ------------------------------------------------------------------ */
   /*  Layout commun : Header + Outlet + Toaster                         */
   /* ------------------------------------------------------------------ */

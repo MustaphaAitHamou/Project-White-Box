@@ -7,9 +7,9 @@ import { useGoogleLogin, googleLogout } from '@react-oauth/google';
 
 // réinitialisation automatique du localStorage avant chaque test
 beforeEach(() => {
-  try { localStorage.clear(); } catch {}
-  jest.clearAllMocks();
-});
+    try { localStorage.clear(); } catch (e) { void e; } // évite no-empty
+    jest.clearAllMocks();
+  });
 
 describe('🔐 Header', () => {
   it('affiche le bouton "Connexion", ouvre le dialog et déclenche le login avec consentement', async () => {

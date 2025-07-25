@@ -1,9 +1,9 @@
-/* ------------------------------------------------------------------
-   Itinéraire quotidien – ordre Breakfast → Evening garanti
-------------------------------------------------------------------- */
-import PropTypes   from 'prop-types';
+/* eslint-env browser */
+import React from 'react';
+import PropTypes from 'prop-types';
+import PlaceCardItem from '~/view-trip/components/PlaceCardItem';
 
-const SLOT_ORDER = { breakfast:0, morning:1, afternoon:2, evening:3 };
+const SLOT_ORDER = { breakfast: 0, morning: 1, afternoon: 2, evening: 3 };
 
 export default function PlacesToVisit({ trip }) {
   const { dailyItinerary = [] } = trip?.TripData || {};
@@ -53,7 +53,6 @@ export default function PlacesToVisit({ trip }) {
   );
 }
 
-/* -------------------------- PropTypes -------------------------- */
 PlacesToVisit.propTypes = {
   trip: PropTypes.shape({
     TripData: PropTypes.shape({

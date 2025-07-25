@@ -1,64 +1,108 @@
-import React, { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { collection, query, where, getDocs } from "firebase/firestore"
-import { db } from "~/service/firebaseConfig"
-import UserTripCardItem from "./components/UserTripCardItem"
-import Footer from "~/view-trip/components/Footer"
+// src/__tests__/TripList.test.jsx
 
-export default function MyTrips() {
-  const navigate = useNavigate()
-  const [userTrips, setUserTrips] = useState([])
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-  /* Charge les voyages de l’utilisateur connecté */
-  useEffect(() => {
-    ;(async () => {
-      const stored = localStorage.getItem("user")
-      if (!stored) return navigate("/")
+// ✅ Corriger l'import selon ton arborescence réelle
 
-      const { email } = JSON.parse(stored)
-      const snap      = await getDocs(
-        query(collection(db, "AITrips"), where("userEmail", "==", email))
-      )
-      setUserTrips(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    })()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+// Mock Firebase Firestore
+vi.mock('firebase/firestore', async () => {
+  const actual = await vi.importActual('firebase/firestore');
+  return {
+    ...actual,
+    collection: vi.fn(),
+    query: vi.fn(),
+    where: vi.fn(),
+    getDocs: vi.fn(),
+  };
+});
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700">
-      <section className="pt-28 pb-20 px-6 md:px-32">
-        <div className="bg-white/80 backdrop-blur-lg border border-white/30 rounded-3xl p-10 shadow-2xl">
-          <h2 className="text-4xl font-extrabold text-gray-800 mb-10">
-            Mes voyages
-          </h2>
+import { getDocs } from 'firebase/firestore';
 
-          {/* Aucun voyage */}
-          {userTrips.length === 0 ? (
-            <div className="flex flex-col items-center py-24">
-              <p className="text-lg text-gray-600 mb-6">
-                Aucun voyage trouvé.
-              </p>
-              <button
-                onClick={() => navigate("/create-trip")}
-                className="bg-gray-800 hover:bg-gray-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg transition-transform hover:-translate-y-0.5"
-              >
-                Créer un nouveau voyage
-              </button>
-            </div>
-          ) : (
-            /* Grille de voyages */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {userTrips.map((trip) => (
-                <UserTripCardItem key={trip.id} trip={trip} />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+// Mock useNavigate
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => vi.fn(),
+  };
+});
 
-      <Footer />
+// Mock localStorage
+beforeEach(() => {
+  localStorage.setItem(
+    'user',
+    JSON.stringify({ email: 'test@example.com' })
+  );
+});
 
-    </div>
-    
-  )
-}
+describe('🧳 MyTrips', () => {
+  it('affiche un message si aucun voyage trouvé', async () => {
+    getDocs.mockResolvedValueOnce({ docs: [] });
+
+    render(
+      <MemoryRouter>
+        <MyTrips />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/aucun voyage trouvé/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /créer un nouveau voyage/i })).toBeInTheDocument();
+  });
+
+  it('affiche un voyage s’il est trouvé dans Firestore', async () => {
+    getDocs.mockResolvedValueOnce({
+      docs: [
+        {
+          id: 'trip42',
+          data: () => ({
+            userSelection: {
+              location: { label: 'Berlin' },
+              noOfDays: 3,
+              budget: 'Bon marché',
+              travelCompanion: 'Solo',
+            },
+          }),
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter>
+        <MyTrips />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/Berlin/i)).toBeInTheDocument();
+    expect(screen.getByText(/3 jours/i)).toBeInTheDocument();
+    expect(screen.getByText(/Bon marché/i)).toBeInTheDocument();
+    expect(screen.getByText(/Solo/i)).toBeInTheDocument();
+  });
+
+  it('redirige vers le voyage au clic', async () => {
+    getDocs.mockResolvedValueOnce({
+      docs: [
+        {
+          id: 'trip42',
+          data: () => ({
+            userSelection: {
+              location: { label: 'Berlin' },
+              noOfDays: 2,
+              budget: 'Moyen',
+              travelCompanion: 'Solo',
+            },
+          }),
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter>
+        <MyTrips />
+      </MemoryRouter>
+    );
+
+    const card = await screen.findByText((text) => text.includes('Berlin'));
+    expect(card.closest('a')).toHaveAttribute('href', '/view-trip/trip42');
+  });
+});

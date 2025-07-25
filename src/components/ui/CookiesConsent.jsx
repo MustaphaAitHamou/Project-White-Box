@@ -1,10 +1,10 @@
 // src/components/ui/CookieConsent.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const COOKIE_CATEGORIES = {
-  necessary: 'Fonctionnels',
+  necessary : 'Fonctionnels',
   statistics: 'Statistiques',
-  marketing: 'Marketing',
+  marketing : 'Marketing',
 };
 
 export default function CookieConsent() {
@@ -56,48 +56,64 @@ export default function CookieConsent() {
               <button
                 onClick={rejectAll}
                 className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-              >Refuser</button>
+              >
+                Refuser
+              </button>
               <button
                 onClick={customize}
                 className="px-4 py-2 bg-yellow-200 text-yellow-800 rounded hover:bg-yellow-300"
-              >Personnaliser</button>
+              >
+                Personnaliser
+              </button>
               <button
                 onClick={acceptAll}
                 className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-              >Accepter</button>
+              >
+                Accepter
+              </button>
             </div>
           </>
         ) : (
           <>
             <h2 className="text-2xl font-bold text-gray-800">Personnaliser les cookies</h2>
             <form
-              onSubmit={e => {
+              onSubmit={(e) => {
                 e.preventDefault();
                 const data = Object.fromEntries(new FormData(e.target));
                 saveCustom({
                   statistics: data.statistics === 'on',
-                  marketing: data.marketing === 'on',
+                  marketing : data.marketing === 'on',
                 });
               }}
               className="space-y-3"
             >
-              {Object.entries(COOKIE_CATEGORIES).map(([key, label]) => (
-                <div key={key} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name={key}
-                    defaultChecked={key === 'necessary'}
-                    disabled={key === 'necessary'}
-                    className="mr-2 accent-indigo-600"
-                  />
-                  <label className="text-gray-700">{label}</label>
-                </div>
-              ))}
+              {Object.entries(COOKIE_CATEGORIES).map(([key, label]) => {
+                const id = `cookie-${key}`;
+                return (
+                  <div key={key} className="flex items-center">
+                    <input
+                      id={id}
+                      type="checkbox"
+                      name={key}
+                      defaultChecked={key === 'necessary'}
+                      disabled={key === 'necessary'}
+                      className="mr-2 accent-indigo-600"
+                      aria-label={label}
+                    />
+                    <label htmlFor={id} className="text-gray-700">
+                      {label}
+                    </label>
+                  </div>
+                );
+              })}
+
               <div className="flex justify-end">
                 <button
                   type="submit"
                   className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                >Valider</button>
+                >
+                  Valider
+                </button>
               </div>
             </form>
           </>

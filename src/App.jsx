@@ -1,13 +1,8 @@
-import React from 'react'
-import './App.css'
-import Hero from './components/custom/Hero'
+/* ------------------------------------------------------------------ */
+/*  src/App.jsx – wrapper appli accueil                               */
+/*  (Hero plein écran, gradient géré dans Hero)                       */
+/* ------------------------------------------------------------------ */
 
-function App() {
-  return (
-    <>
-      <Hero />
-    </>
-  )
+export default function App() {
+  return <Hero />
 }
-
-export default App

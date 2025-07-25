@@ -1,33 +1,33 @@
 /* ------------------------------------------------------------------
-   Grille d’hôtels – clé unique + fallback « aucun »
+   Liste d’hôtels pour un voyage
 ------------------------------------------------------------------- */
-import React from 'react'
-import HotelCardItem from './HotelCardItem'
+import PropTypes        from 'prop-types';
 
 export default function Hotels({ trip }) {
-  const hotels = trip?.TripData?.hotelOptions || []
+  const hotels = trip?.TripData?.hotelOptions || [];
+  const dest   = trip?.userSelection?.location?.label || '';
 
-  if (!hotels.length) {
-    const label = trip?.userSelection?.location?.label || 'la destination'
-    return (
-      <p className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
-        aucun hôtel n’a été trouvé pour « {label} ».
-      </p>
-    )
-  }
+  if (!hotels.length) return null;
 
   return (
-    <>
-
+    <section className="space-y-6">
+      <h3 className="text-xl font-semibold">Hébergements recommandés</h3>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {hotels.map((h, idx) => (
-          /* clé unique = nom + index */
-          <HotelCardItem
-            key={`${h.hotelName}-${idx}`}
-            hotel={h}
-          />
+        {hotels.map((h) => (
+          <HotelCardItem key={h.id || h.name} hotel={{ ...h, destination: dest }} />
         ))}
       </div>
-    </>
-  )
+    </section>
+  );
 }
+
+Hotels.propTypes = {
+  trip: PropTypes.shape({
+    TripData: PropTypes.shape({
+      hotelOptions: PropTypes.array,
+    }),
+    userSelection: PropTypes.shape({
+      location: PropTypes.shape({ label: PropTypes.string }),
+    }),
+  }).isRequired,
+};

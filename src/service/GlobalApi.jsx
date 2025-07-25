@@ -1,35 +1,23 @@
 /* eslint-env browser, node */
-/* global process */
-
 import axios from 'axios';
+import env from '~/lib/env';
 
-/* ------------------------------------------------------------------ */
-/*  Clé API : on lit d’abord import.meta.env (mode navigateur/Vite),   */
-/*  puis on retombe sur process.env (mode tests Node/Jest).            */
-/* ------------------------------------------------------------------ */
-const API_KEY =
-  import.meta.env?.VITE_GOOGLE_PLACE_API_KEY ||
-  process.env.VITE_GOOGLE_PLACE_API_KEY;
+const API_KEY = env.VITE_GOOGLE_PLACE_API_KEY || 'test-key';
 
-/* ------------------------------------------------------------------ */
-/*  Appel POST vers Places API                                         */
-/* ------------------------------------------------------------------ */
-const ENDPOINT = 'https://places.googleapis.com/v1/places:searchText';
+const SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText';
+const SEARCH_CONF = {
+  headers: {
+    'Content-Type'   : 'application/json',
+    'X-Goog-Api-Key' : API_KEY,
+    'X-Goog-FieldMask':
+      'places.id,places.displayName,places.formattedAddress,' +
+      'places.location,places.rating,places.priceLevel,places.photos',
+  },
+};
 
-/**
- * @param {object} payload – ex : { textQuery: 'Eiffel Tower' }
- */
-export function GetPlaceDetails(payload) {
-  return axios.post(
-    ENDPOINT,
-    payload,
-    {
-      headers: {
-        'Content-Type'   : 'application/json',
-        'X-Goog-Api-Key' : API_KEY,
-        'X-Goog-FieldMask':
-          'places.photos,places.displayName,places.id,places.location'
-      }
-    }
-  );
-}
+export const GetPlaceDetails = (payload) =>
+  axios.post(SEARCH_URL, payload, SEARCH_CONF);
+
+export const GetPlacePhoto = (photoRef, max = 1000) =>
+  `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${max}` +
+  `&photoreference=${encodeURIComponent(photoRef)}&key=${API_KEY}`;

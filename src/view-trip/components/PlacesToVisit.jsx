@@ -1,23 +1,17 @@
 /* ------------------------------------------------------------------
    Itinéraire quotidien – ordre Breakfast → Evening garanti
 ------------------------------------------------------------------- */
-import React from 'react';
-import PlaceCardItem from '~/view-trip/components/PlaceCardItem'
+import PropTypes   from 'prop-types';
 
-const SLOT_ORDER = {
-  breakfast : 0,
-  morning   : 1,
-  afternoon : 2,
-  evening   : 3,
-};
+const SLOT_ORDER = { breakfast:0, morning:1, afternoon:2, evening:3 };
 
 export default function PlacesToVisit({ trip }) {
   const { dailyItinerary = [] } = trip?.TripData || {};
-  const destinationLabel = trip?.userSelection?.location?.label || ''; 
+  const destinationLabel = trip?.userSelection?.location?.label || '';
 
   if (!dailyItinerary.length) {
-    return ( 
-      <p className="rounded bg-yellow-50 p-4 text-sm text-yellow-800"> 
+    return (
+      <p className="rounded bg-yellow-50 p-4 text-sm text-yellow-800">
         Aucun itinéraire n’a été généré pour ce voyage.
       </p>
     );
@@ -25,9 +19,7 @@ export default function PlacesToVisit({ trip }) {
 
   return (
     <div className="space-y-10">
-
       {dailyItinerary.map(({ dayNumber, theme, activities }) => {
-        /*  tri explicite Breakfast→Morning→Afternoon→Evening  */
         const ordered = [...(activities || [])].sort((a, b) => {
           const ra = SLOT_ORDER[a.bestTimeToVisit?.toLowerCase()] ?? 99;
           const rb = SLOT_ORDER[b.bestTimeToVisit?.toLowerCase()] ?? 99;
@@ -37,7 +29,7 @@ export default function PlacesToVisit({ trip }) {
         return (
           <section key={dayNumber} className="space-y-4">
             <h3 className="text-xl font-semibold">
-              Jour&nbsp;{dayNumber}
+              Jour {dayNumber}
               {theme && (
                 <span className="ml-2 text-sm italic text-gray-500">
                   ({theme})
@@ -60,3 +52,15 @@ export default function PlacesToVisit({ trip }) {
     </div>
   );
 }
+
+/* -------------------------- PropTypes -------------------------- */
+PlacesToVisit.propTypes = {
+  trip: PropTypes.shape({
+    TripData: PropTypes.shape({
+      dailyItinerary: PropTypes.array,
+    }),
+    userSelection: PropTypes.shape({
+      location: PropTypes.shape({ label: PropTypes.string }),
+    }),
+  }).isRequired,
+};

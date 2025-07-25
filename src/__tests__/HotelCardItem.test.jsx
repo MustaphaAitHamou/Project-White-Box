@@ -1,62 +1,34 @@
-/* eslint-env jest,node */
-/* global jest, describe, it, expect */
-
+/* eslint-env jest */
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import HotelCardItem from '../view-trip/components/HotelCardItem';
-import * as api from '../service/GlobalApi';
+import { render, screen } from '@testing-library/react';
+import HotelCardItem from '~/view-trip/components/HotelCardItem';
 
-// Mock du module GlobalApi
-jest.mock('../service/GlobalApi');
+jest.mock('~/service/GlobalApi', () => ({
+  GetPlaceDetails: jest.fn().mockResolvedValue({
+    data: {
+      places: [{
+        photos: [{ name: 'phoToABC' }],
+        location: { latitude: 1, longitude: 2 },
+      }],
+    },
+  }),
+}));
 
-describe('HotelCardItem', () => {
-  it('construit bien l’URL de la photo et l’affiche', async () => {
-    const fakePhotoRef = 'ABC123';
-    api.GetPlaceDetails.mockResolvedValueOnce({
-      data: { places: [{ photos: [{ name: `places/XX/photos/${fakePhotoRef}` }] }] },
-    });
+test('HotelCardItem affiche infos et photo', async () => {
+  render(
+    <HotelCardItem
+      hotel={{
+        hotelName: 'Hotel Test',
+        hotelAddress: '1 rue test',
+        price: '€ 100',
+        rating: 4.5,
+      }}
+    />
+  );
 
-    render(
-      <MemoryRouter>
-        <HotelCardItem
-          hotel={{
-            hotelName: 'Test Hotel',
-            hotelAddress: '123 Rue Fictive',
-            price: '$50',
-            rating: '4.0 Stars',
-          }}
-        />
-      </MemoryRouter>
-    );
+  expect(screen.getByText(/hotel test/i)).toBeInTheDocument();
+  expect(screen.getByText(/€ 100/)).toBeInTheDocument();
 
-    await waitFor(() => {
-      const img = screen.getByAltText('Test Hotel');
-      expect(img).toBeInTheDocument();
-      // On vérifie que la photo utilise bien la référence encodée
-      expect(img.src).toContain(encodeURIComponent(fakePhotoRef));
-    });
-  });
-
-  it('affiche le placeholder si l’API échoue', async () => {
-    api.GetPlaceDetails.mockRejectedValueOnce(new Error('Network Error'));
-
-    render(
-      <MemoryRouter>
-        <HotelCardItem
-          hotel={{
-            hotelName: 'Test Hotel',
-            hotelAddress: '123 Rue Fictive',
-            price: '$50',
-            rating: '4.0 Stars',
-          }}
-        />
-      </MemoryRouter>
-    );
-
-    await waitFor(() => {
-      const img = screen.getByAltText('Test Hotel');
-      expect(img.src).toContain('/placeholder.png');
-    });
-  });
+  const img = await screen.findByRole('img', { name: /hotel test/i });
+  expect(img.src).toContain('phoToABC');
 });

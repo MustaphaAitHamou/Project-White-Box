@@ -1,12 +1,8 @@
-import React, { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import { db } from "~/service/firebaseConfig"
 import { doc, getDoc } from "firebase/firestore"
-import InfoSection from "../components/InfoSection"
-import Hotels from "../components/Hotels"
-import PlacesToVisit from "../components/PlacesToVisit"
-import Footer from "../components/Footer"
 
 export default function ViewTrip() {
   const { tripId } = useParams()

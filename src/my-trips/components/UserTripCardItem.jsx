@@ -1,51 +1,63 @@
-import React, { useEffect, useState } from "react"
-import { GetPlaceDetails } from "~/service/GlobalApi"
-import { Link } from "react-router-dom"
+import { render, screen } from '@testing-library/react';
 
-const PHOTO_REF_URL =
-  "https://places.googleapis.com/v1/{NAME}/media" +
-  "?maxHeightPx=1000&maxWidthPx=1000&key=" +
-  import.meta.env.VITE_GOOGLE_PLACE_API_KEY
+describe('🧳 UserTripCardItem', () => {
+  it('affiche les informations du voyage (label, jours, budget)', () => {
+    const tripMock = {
+      id: 'trip123',
+      userSelection: {
+        location: { label: 'Berlin' },
+        noOfDays: 4,
+        budget: 'Modéré',
+      },
+    };
 
-export default function UserTripCardItem({ trip }) {
-  const [photoUrl, setPhotoUrl] = useState("/placeholder.png")
+    render(
+      <MemoryRouter>
+        <UserTripCardItem trip={tripMock} />
+      </MemoryRouter>
+    );
 
-  useEffect(() => {
-    const label = trip?.userSelection?.location?.label?.trim()
-    if (label) fetchPhoto(label)
-  }, [trip])
+    expect(screen.getByText('Berlin')).toBeInTheDocument();
+    expect(screen.getByText(/4 jours/i)).toBeInTheDocument();
+    expect(screen.getByText(/Modéré/i)).toBeInTheDocument();
+  });
 
-  async function fetchPhoto(query) {
-    try {
-      const resp   = await GetPlaceDetails({ textQuery: query })
-      const photos = resp.data.places?.[0]?.photos
-      if (!photos?.length) return
-      const url = PHOTO_REF_URL.replace("{NAME}", photos[0].name)
-      setPhotoUrl(url)
-    } catch (err) {
-      console.error("Photo error:", err)
-    }
-  }
+  it('redirige vers la bonne URL', () => {
+    const tripMock = {
+      id: 'trip456',
+      userSelection: {
+        location: { label: 'Tokyo' },
+        noOfDays: 7,
+        budget: 'Luxe',
+      },
+    };
 
-  const { label }               = trip?.userSelection?.location || {}
-  const { noOfDays, budget }    = trip?.userSelection || {}
+    render(
+      <MemoryRouter>
+        <UserTripCardItem trip={tripMock} />
+      </MemoryRouter>
+    );
 
-  return (
-    <Link to={`/view-trip/${trip?.id}`}>
-      <article className="rounded-2xl overflow-hidden bg-white shadow-md hover:shadow-lg transition-all">
-        <img
-          src={photoUrl}
-          alt={label}
-          className="w-full h-44 object-cover"
-          onError={(e) => (e.currentTarget.src = "/placeholder.png")}
-        />
-        <div className="p-4">
-          <h2 className="font-semibold">{label}</h2>
-          <p className="text-sm text-gray-500">
-            {noOfDays} jours – Budget&nbsp;: {budget}
-          </p>
-        </div>
-      </article>
-    </Link>
-  )
-}
+    const link = screen.getByRole('link', { name: /Tokyo/i });
+    expect(link).toHaveAttribute('href', '/view-trip/trip456');
+  });
+
+  it('affiche "Voyage" si aucun label n’est fourni', () => {
+    const tripMock = {
+      id: 'trip789',
+      userSelection: {
+        location: { label: '' }, // vide
+        noOfDays: 2,
+        budget: 'Économique',
+      },
+    };
+
+    render(
+      <MemoryRouter>
+        <UserTripCardItem trip={tripMock} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Voyage')).toBeInTheDocument();
+  });
+});

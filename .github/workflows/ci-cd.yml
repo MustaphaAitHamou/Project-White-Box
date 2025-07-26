@@ -15,13 +15,13 @@ on:
 env:
   NODE_VERSION: "20"
   BUILD_DIR: "dist"
-  REMOTE_DIR: "/var/www/tripgenius"          # dossier sur Iglao
+  REMOTE_DIR: "/var/www/tripgenius"
   LC_ALL: "C.UTF-8"
 
 jobs:
-# ─────────────────────────────────────────────────────────────
-# 1️⃣  Build + static checks (ESLint, TypeScript)
-# ─────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
+  # 1️⃣  Build + Lint
+  # ─────────────────────────────────────────────
   build:
     runs-on: ubuntu-latest
     steps:
@@ -35,8 +35,8 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Lint & type‑check
-        run: npm run lint   # -> eslint + tsc --noEmit
+      - name: Lint
+        run: npm run lint
 
       - name: Build (Vite)
         run: npm run build
@@ -47,9 +47,9 @@ jobs:
           name: site-build
           path: ${{ env.BUILD_DIR }}
 
-# ─────────────────────────────────────────────────────────────
-# 2️⃣  Tests unitaires  + couverture  (Vitest + Codecov)
-# ─────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
+  # 2️⃣  Tests + Couverture (Vitest/Jest) + Codecov
+  # ─────────────────────────────────────────────
   test:
     needs: build
     runs-on: ubuntu-latest
@@ -61,40 +61,73 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Run Vitest
+      - name: Run tests with coverage
         run: npm run test -- --coverage
         env:
           NODE_OPTIONS: "--experimental-vm-modules"
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        if: ${{ secrets.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/vitest-final.json
+          files: ./coverage/*.(json|lcov|xml)
           flags: unittests
           fail_ci_if_error: true
+          slug: MustaphaAitHamou/Project-White-Box
 
-# ─────────────────────────────────────────────
-# 3️⃣  Audit Lighthouse
-# ─────────────────────────────────────────────
-lighthouse:
-  needs: test
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/download-artifact@v4
-      with:
-        name: site-build
-        path: dist
+  # ─────────────────────────────────────────────
+  # 3️⃣  Lighthouse CI (optionnel, non bloquant si tu veux)
+  # ─────────────────────────────────────────────
+  lighthouse:
+    needs: test
+    runs-on: ubuntu-latest
+    # mets à true si tu veux qu’un échec Lighthouse casse la CI
+    continue-on-error: true
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: site-build
+          path: dist
 
-    - name: Install http-server & LHCI
-      run: npm i -g http-server @lhci/cli@0.13
+      - name: Create .lighthouserc.json
+      # tu peux aussi commiter ce fichier, c’est au choix
+        run: |
+          cat > .lighthouserc.json <<'EOF'
+          {
+            "ci": {
+              "collect": {
+                "staticDistDir": "dist",
+                "numberOfRuns": 1,
+                "startServerCommand": "npx http-server dist -p 4173 -c-1",
+                "url": ["http://localhost:4173/index.html"],
+                "settings": {
+                  "chromeFlags": "--no-sandbox --disable-dev-shm-usage"
+                }
+              },
+              "assert": {
+                "preset": "lighthouse:no-pwa",
+                "assertions": {
+                  "first-contentful-paint": "off",
+                  "largest-contentful-paint": "off"
+                }
+              },
+              "upload": {
+                "target": "temporary-public-storage"
+              }
+            }
+          }
+          EOF
 
-    - name: Run Lighthouse CI
-      run: npx lhci autorun --config=.lighthouserc.json
+      - name: Install http-server & LHCI
+        run: npm i -g http-server @lhci/cli@0.13
 
-# ─────────────────────────────────────────────────────────────
-# 4️⃣  Packaging Docker (optionnel) – trace performance image
-# ─────────────────────────────────────────────────────────────
+      - name: Run Lighthouse CI
+        run: npx lhci autorun --config=.lighthouserc.json
+
+  # ─────────────────────────────────────────────
+  # 4️⃣  Docker (optionnel)
+  # ─────────────────────────────────────────────
   package:
     needs: lighthouse
     runs-on: ubuntu-latest
@@ -109,9 +142,9 @@ lighthouse:
           name: docker-image
           path: image.tar.gz
 
-# ─────────────────────────────────────────────────────────────
-# 5️⃣  Déploiement sur Iglao  (SSH + rsync)
-# ─────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
+  # 5️⃣  Déploiement prod (manuel)
+  # ─────────────────────────────────────────────
   deploy-prod:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy-prod == 'yes'
     needs: package

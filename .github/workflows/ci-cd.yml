@@ -74,6 +74,12 @@ jobs:
           flags: unittests
           fail_ci_if_error: true
 
+# ───────── 3) Lighthouse – optionnel ─────────
+lighthouse:
+  if: false  # désactivé
+  needs: test
+  runs-on: ubuntu-latest
+  steps: []
 # ─────────────────────────────────────────────────────────────
 # 4️⃣  Packaging Docker (optionnel) – trace performance image
 # ─────────────────────────────────────────────────────────────

@@ -3,17 +3,13 @@
       "collect": {
         "staticDistDir": "dist",
         "numberOfRuns": 1,
-        "startServerCommand": "npx http-server dist -p 4173 -c-1",
-        "url": ["http://localhost:4173/index.html"],
-        "settings": {
-          "chromeFlags": "--no-sandbox --disable-dev-shm-usage"
-        }
+        "chromeFlags": "--no-sandbox --headless=new --disable-dev-shm-usage"
       },
       "assert": {
         "preset": "lighthouse:no-pwa",
         "assertions": {
-          "first-contentful-paint": "off",
-          "largest-contentful-paint": "off"
+          "categories:performance": ["warn", 0.75],
+          "categories:accessibility": ["error", 0.90]
         }
       },
       "upload": {

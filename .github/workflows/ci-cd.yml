@@ -1,4 +1,5 @@
-name: CI‑CD Pipeline
+# .github/workflows/ci-cd.yml
+name: CI‑CD
 
 on:
   push:
@@ -7,23 +8,21 @@ on:
     branches: [ main ]
   workflow_dispatch:
     inputs:
-      deploy-prod:
-        description: "Déployer en production ? (yes/no)"
+      deploy_prod:
+        description: "Déployer en prod ? (yes/no)"
         required: false
         default: "no"
 
 env:
   NODE_VERSION: "20"
-  BUILD_DIR: "dist"
-  REMOTE_DIR: "/var/www/tripgenius"
-  LC_ALL: "C.UTF-8"
+  BUILD_DIR: dist
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # 1) Build + lint
+  # 1) Build + Lint
   build:
     runs-on: ubuntu-latest
     steps:
@@ -49,45 +48,36 @@ jobs:
           name: site-build
           path: ${{ env.BUILD_DIR }}
 
-  # 2) Tests + coverage
+  # 2) Tests + couverture
   test:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+
       - run: npm ci
 
-      - name: Run tests with coverage
-        run: npm test -- --coverage --coverageReporters=lcov
+      - name: Run Jest with coverage
+        run: npm test -- --coverage
 
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: coverage
-
-      - name: Upload to Codecov (optional)
-        if: ${{ secrets.CODECOV_TOKEN != '' }}
-        uses: codecov/codecov-action@v4
+      - name: Upload coverage reports to Codecov
+        if: ${{ secrets.CODECOV_TOKEN }}
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          slug: MustaphaAitHamou/Project-White-Box
           files: ./coverage/lcov.info
           flags: unittests
-          fail_ci_if_error: false
+          fail_ci_if_error: true
 
-  # 3) Déploiement manuel (si tous les secrets SSH sont présents)
+  # 3) Déploiement (optionnel)
   deploy-prod:
-    if: >-
-      ${{ github.event_name == 'workflow_dispatch' &&
-          github.event.inputs.deploy-prod == 'yes' &&
-          secrets.IGLAO_SSH_KEY != '' &&
-          secrets.IGLAO_USER    != '' &&
-          secrets.IGLAO_HOST    != '' &&
-          secrets.IGLAO_KNOWN_HOST != '' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_prod == 'yes' }}
     needs: test
     runs-on: ubuntu-latest
     environment: production
@@ -98,19 +88,22 @@ jobs:
           path: ${{ env.BUILD_DIR }}
 
       - name: Setup SSH agent
+        if: ${{ secrets.IGLAO_SSH_KEY }}
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.IGLAO_SSH_KEY }}
 
       - name: Add host to known_hosts
+        if: ${{ secrets.IGLAO_KNOWN_HOST }}
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.IGLAO_KNOWN_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Rsync to server
+        if: ${{ secrets.IGLAO_USER && secrets.IGLAO_HOST }}
         run: |
           rsync -avz --delete ${{ env.BUILD_DIR }}/ \
-            ${{ secrets.IGLAO_USER }}@${{ secrets.IGLAO_HOST }}:${{ env.REMOTE_DIR }}
+            ${{ secrets.IGLAO_USER }}@${{ secrets.IGLAO_HOST }}:/var/www/tripgenius
 
       - name: Smoke test
         run: curl -f https://tripgenius.eu || exit 1

@@ -15,13 +15,21 @@ on:
 env:
   NODE_VERSION: "20"
   BUILD_DIR: "dist"
-  REMOTE_DIR: "/var/www/tripgenius"          # dossier sur Iglao
+  REMOTE_DIR: "/var/www/tripgenius"
   LC_ALL: "C.UTF-8"
 
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-# ─────────────────────────────────────────────────────────────
-# 1️⃣  Build + static checks (ESLint, TypeScript)
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# 1️⃣  Lint + Build
+# ─────────────────────────────────────────────
   build:
     runs-on: ubuntu-latest
     steps:
@@ -35,8 +43,8 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Lint & type‑check
-        run: npm run lint   # -> eslint + tsc --noEmit
+      - name: Lint
+        run: npm run lint
 
       - name: Build (Vite)
         run: npm run build
@@ -47,9 +55,9 @@ jobs:
           name: site-build
           path: ${{ env.BUILD_DIR }}
 
-# ─────────────────────────────────────────────────────────────
-# 2️⃣  Tests unitaires  + couverture  (Vitest + Codecov)
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# 2️⃣  Tests + Couverture (Jest) + Codecov
+# ─────────────────────────────────────────────
   test:
     needs: build
     runs-on: ubuntu-latest
@@ -59,55 +67,60 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+
       - run: npm ci
 
-      - name: Run Vitest
-        run: npm run test -- --coverage
-        env:
-          NODE_OPTIONS: "--experimental-vm-modules"
+      - name: Run tests with coverage
+        run: npm test -- --coverage --coverageReporters=lcov
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/vitest-final.json
+          token: ${{ secrets.CODECOV_TOKEN }}   # à définir dans les secrets
+          files: ./coverage/lcov.info
           flags: unittests
+          disable_search: true
           fail_ci_if_error: true
+          verbose: true
 
-# ─────────────────────────────────────────────────────────────
-# 3️⃣  Audit performances & accessibilité  (Lighthouse CI)
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# 3️⃣  Lighthouse CI (perf / a11y)
+# ─────────────────────────────────────────────
   lighthouse:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4  # récupère build
+      - uses: actions/download-artifact@v4
         with:
           name: site-build
           path: ${{ env.BUILD_DIR }}
 
       - name: Install LHCI
+        run: npm install -g @lhci/cli@0.13
+
+      - name: Collect & upload reports
         run: |
-          npm install -g @lhci/cli@0.13
           lhci collect --static-dist-dir=${{ env.BUILD_DIR }}
-          lhci upload \
-            --target=temporary-public-storage \
-            --token="${{ secrets.LHCI_TOKEN || 'unused' }}"
+          lhci upload --target=temporary-public-storage --token="${{ secrets.LHCI_TOKEN || 'unused' }}"
 
       - name: Enforce budgets
-        run: |
-          lhci assert --assertions.preset lighthouse:no-pwa \
-            --assertions.assertionFailureLevels=error
+        run: lhci assert --assertions.preset lighthouse:no-pwa --assertions.assertionFailureLevels=error
 
-# ─────────────────────────────────────────────────────────────
-# 4️⃣  Packaging Docker (optionnel) – trace performance image
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# 4️⃣  Docker package (optionnel)
+# ─────────────────────────────────────────────
   package:
     needs: lighthouse
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build image
+      - name: Build docker image
         run: |
           docker build -t tripgenius:${{ github.sha }} .
           docker image save tripgenius:${{ github.sha }} | gzip > image.tar.gz
@@ -116,9 +129,9 @@ jobs:
           name: docker-image
           path: image.tar.gz
 
-# ─────────────────────────────────────────────────────────────
-# 5️⃣  Déploiement sur Iglao  (SSH + rsync)
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# 5️⃣  Déploiement prod (manuel)
+# ─────────────────────────────────────────────
   deploy-prod:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy-prod == 'yes'
     needs: package
@@ -135,7 +148,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.IGLAO_SSH_KEY }}
 
-      - name: Add Iglao to known_hosts
+      - name: Add Iglao host to known_hosts
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.IGLAO_KNOWN_HOST }}" >> ~/.ssh/known_hosts
@@ -146,4 +159,4 @@ jobs:
             ${{ secrets.IGLAO_USER }}@${{ secrets.IGLAO_HOST }}:${{ env.REMOTE_DIR }}
 
       - name: Smoke‑test production URL
-        run: curl -f https://tripgenius.eu || exit 1
+        run: curl -f https://tripgenius.eu

@@ -1,20 +1,17 @@
-// src/components/ui/label.jsx
-import { forwardRef } from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 
-/** Petit helper pour concaténer les classes */
-const cx = (...cls) => cls.filter(Boolean).join(' ');
-
-export const Label = forwardRef(({ className, ...props }, ref) => (
-  <label
-    ref={ref}
-    className={cx(
-      'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
-      className
-    )}
-    {...props}
-  />
+ 
+export const Label = React.forwardRef(({ className = '', children, ...rest }, ref) => (
+  <label ref={ref} className={className} {...rest}>
+    {children}
+  </label>
 ));
-
 Label.displayName = 'Label';
+
+Label.propTypes = {
+  className: PropTypes.string,
+  children : PropTypes.node,
+};
 
 export default Label;

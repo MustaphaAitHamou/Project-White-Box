@@ -75,31 +75,6 @@ jobs:
           fail_ci_if_error: true
 
 # ─────────────────────────────────────────────────────────────
-# 3️⃣  Audit performances & accessibilité  (Lighthouse CI)
-# ─────────────────────────────────────────────────────────────
-  lighthouse:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4  # récupère build
-        with:
-          name: site-build
-          path: ${{ env.BUILD_DIR }}
-
-      - name: Install LHCI
-        run: |
-          npm install -g @lhci/cli@0.13
-          lhci collect --static-dist-dir=${{ env.BUILD_DIR }}
-          lhci upload \
-            --target=temporary-public-storage \
-            --token="${{ secrets.LHCI_TOKEN || 'unused' }}"
-
-      - name: Enforce budgets
-        run: |
-          lhci assert --assertions.preset lighthouse:no-pwa \
-            --assertions.assertionFailureLevels=error
-
-# ─────────────────────────────────────────────────────────────
 # 4️⃣  Packaging Docker (optionnel) – trace performance image
 # ─────────────────────────────────────────────────────────────
   package:

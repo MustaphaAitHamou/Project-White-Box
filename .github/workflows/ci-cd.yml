@@ -19,9 +19,7 @@ env:
   LC_ALL: "C.UTF-8"
 
 jobs:
-  # ─────────────────────────────────────────────
-  # 1️⃣  Build + Lint
-  # ─────────────────────────────────────────────
+  # 1️⃣ Build + Lint
   build:
     runs-on: ubuntu-latest
     steps:
@@ -47,9 +45,7 @@ jobs:
           name: site-build
           path: ${{ env.BUILD_DIR }}
 
-  # ─────────────────────────────────────────────
-  # 2️⃣  Tests + Couverture (Vitest/Jest) + Codecov
-  # ─────────────────────────────────────────────
+  # 2️⃣ Tests + Coverage + Codecov
   test:
     needs: build
     runs-on: ubuntu-latest
@@ -76,13 +72,10 @@ jobs:
           fail_ci_if_error: true
           slug: MustaphaAitHamou/Project-White-Box
 
-  # ─────────────────────────────────────────────
-  # 3️⃣  Lighthouse CI (optionnel, non bloquant si tu veux)
-  # ─────────────────────────────────────────────
+  # 3️⃣ Lighthouse (optionnel)
   lighthouse:
     needs: test
     runs-on: ubuntu-latest
-    # mets à true si tu veux qu’un échec Lighthouse casse la CI
     continue-on-error: true
     steps:
       - uses: actions/download-artifact@v4
@@ -91,7 +84,6 @@ jobs:
           path: dist
 
       - name: Create .lighthouserc.json
-      # tu peux aussi commiter ce fichier, c’est au choix
         run: |
           cat > .lighthouserc.json <<'EOF'
           {
@@ -125,9 +117,7 @@ jobs:
       - name: Run Lighthouse CI
         run: npx lhci autorun --config=.lighthouserc.json
 
-  # ─────────────────────────────────────────────
-  # 4️⃣  Docker (optionnel)
-  # ─────────────────────────────────────────────
+  # 4️⃣ Docker (optionnel)
   package:
     needs: lighthouse
     runs-on: ubuntu-latest
@@ -142,11 +132,9 @@ jobs:
           name: docker-image
           path: image.tar.gz
 
-  # ─────────────────────────────────────────────
-  # 5️⃣  Déploiement prod (manuel)
-  # ─────────────────────────────────────────────
+  # 5️⃣ Déploiement prod manuel
   deploy-prod:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy-prod == 'yes'
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.deploy-prod == 'yes' }}
     needs: package
     runs-on: ubuntu-latest
     environment: production

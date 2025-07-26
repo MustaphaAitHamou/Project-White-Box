@@ -23,6 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # 1) Build + lint
   build:
     runs-on: ubuntu-latest
     steps:
@@ -48,6 +49,7 @@ jobs:
           name: site-build
           path: ${{ env.BUILD_DIR }}
 
+  # 2) Tests + coverage
   test:
     needs: build
     runs-on: ubuntu-latest
@@ -68,9 +70,8 @@ jobs:
           name: coverage
           path: coverage
 
-      # ⬇️ Étape totalement optionnelle : ne tourne que si TOKEN présent
       - name: Upload to Codecov (optional)
-        if: ${{ !!secrets.CODECOV_TOKEN }}
+        if: ${{ secrets.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -78,15 +79,15 @@ jobs:
           flags: unittests
           fail_ci_if_error: false
 
+  # 3) Déploiement manuel (si tous les secrets SSH sont présents)
   deploy-prod:
-    # déclenché uniquement manuellement ET si tous les secrets SSH sont définis
     if: >-
       ${{ github.event_name == 'workflow_dispatch' &&
           github.event.inputs.deploy-prod == 'yes' &&
-          secrets.IGLAO_SSH_KEY &&
-          secrets.IGLAO_USER &&
-          secrets.IGLAO_HOST &&
-          secrets.IGLAO_KNOWN_HOST }}
+          secrets.IGLAO_SSH_KEY != '' &&
+          secrets.IGLAO_USER    != '' &&
+          secrets.IGLAO_HOST    != '' &&
+          secrets.IGLAO_KNOWN_HOST != '' }}
     needs: test
     runs-on: ubuntu-latest
     environment: production

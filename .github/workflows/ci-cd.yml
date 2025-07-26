@@ -1,5 +1,4 @@
-# .github/workflows/ci-cd.yml
-name: CI‑CD
+name: CI‑CD Pipeline
 
 on:
   push:
@@ -8,21 +7,21 @@ on:
     branches: [ main ]
   workflow_dispatch:
     inputs:
-      deploy_prod:
-        description: "Déployer en prod ? (yes/no)"
+      deploy-prod:
+        description: "Déployer en production ? (yes/no)"
         required: false
         default: "no"
 
 env:
   NODE_VERSION: "20"
-  BUILD_DIR: dist
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  BUILD_DIR: "dist"
+  REMOTE_DIR: "/var/www/tripgenius"          # dossier sur Iglao
+  LC_ALL: "C.UTF-8"
 
 jobs:
-  # 1) Build + Lint
+# ─────────────────────────────────────────────────────────────
+# 1️⃣  Build + static checks (ESLint, TypeScript)
+# ─────────────────────────────────────────────────────────────
   build:
     runs-on: ubuntu-latest
     steps:
@@ -36,49 +35,93 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
+      - name: Lint & type‑check
+        run: npm run lint   # -> eslint + tsc --noEmit
 
       - name: Build (Vite)
         run: npm run build
 
-      - name: Upload build artifact
+      - name: Upload build artefact
         uses: actions/upload-artifact@v4
         with:
           name: site-build
           path: ${{ env.BUILD_DIR }}
 
-  # 2) Tests + couverture
+# ─────────────────────────────────────────────────────────────
+# 2️⃣  Tests unitaires  + couverture  (Vitest + Codecov)
+# ─────────────────────────────────────────────────────────────
   test:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-
       - run: npm ci
 
-      - name: Run Jest with coverage
-        run: npm test -- --coverage
+      - name: Run Vitest
+        run: npm run test -- --coverage
+        env:
+          NODE_OPTIONS: "--experimental-vm-modules"
 
-      - name: Upload coverage reports to Codecov
-        if: ${{ secrets.CODECOV_TOKEN }}
-        uses: codecov/codecov-action@v5
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          slug: MustaphaAitHamou/Project-White-Box
-          files: ./coverage/lcov.info
+          files: ./coverage/vitest-final.json
           flags: unittests
           fail_ci_if_error: true
 
-  # 3) Déploiement (optionnel)
-  deploy-prod:
-    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_prod == 'yes' }}
+# ─────────────────────────────────────────────────────────────
+# 3️⃣  Audit performances & accessibilité  (Lighthouse CI)
+# ─────────────────────────────────────────────────────────────
+  lighthouse:
     needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4  # récupère build
+        with:
+          name: site-build
+          path: ${{ env.BUILD_DIR }}
+
+      - name: Install LHCI
+        run: |
+          npm install -g @lhci/cli@0.13
+          lhci collect --static-dist-dir=${{ env.BUILD_DIR }}
+          lhci upload \
+            --target=temporary-public-storage \
+            --token="${{ secrets.LHCI_TOKEN || 'unused' }}"
+
+      - name: Enforce budgets
+        run: |
+          lhci assert --assertions.preset lighthouse:no-pwa \
+            --assertions.assertionFailureLevels=error
+
+# ─────────────────────────────────────────────────────────────
+# 4️⃣  Packaging Docker (optionnel) – trace performance image
+# ─────────────────────────────────────────────────────────────
+  package:
+    needs: lighthouse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: |
+          docker build -t tripgenius:${{ github.sha }} .
+          docker image save tripgenius:${{ github.sha }} | gzip > image.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar.gz
+
+# ─────────────────────────────────────────────────────────────
+# 5️⃣  Déploiement sur Iglao  (SSH + rsync)
+# ─────────────────────────────────────────────────────────────
+  deploy-prod:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy-prod == 'yes'
+    needs: package
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -88,22 +131,19 @@ jobs:
           path: ${{ env.BUILD_DIR }}
 
       - name: Setup SSH agent
-        if: ${{ secrets.IGLAO_SSH_KEY }}
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.IGLAO_SSH_KEY }}
 
-      - name: Add host to known_hosts
-        if: ${{ secrets.IGLAO_KNOWN_HOST }}
+      - name: Add Iglao to known_hosts
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.IGLAO_KNOWN_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Rsync to server
-        if: ${{ secrets.IGLAO_USER && secrets.IGLAO_HOST }}
         run: |
           rsync -avz --delete ${{ env.BUILD_DIR }}/ \
-            ${{ secrets.IGLAO_USER }}@${{ secrets.IGLAO_HOST }}:/var/www/tripgenius
+            ${{ secrets.IGLAO_USER }}@${{ secrets.IGLAO_HOST }}:${{ env.REMOTE_DIR }}
 
-      - name: Smoke test
+      - name: Smoke‑test production URL
         run: curl -f https://tripgenius.eu || exit 1

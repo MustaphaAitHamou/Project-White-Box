@@ -74,12 +74,24 @@ jobs:
           flags: unittests
           fail_ci_if_error: true
 
-# ───────── 3) Lighthouse – optionnel ─────────
+# ─────────────────────────────────────────────
+# 3️⃣  Audit Lighthouse
+# ─────────────────────────────────────────────
 lighthouse:
-  if: false  # désactivé
   needs: test
   runs-on: ubuntu-latest
-  steps: []
+  steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: site-build
+        path: dist
+
+    - name: Install http-server & LHCI
+      run: npm i -g http-server @lhci/cli@0.13
+
+    - name: Run Lighthouse CI
+      run: npx lhci autorun --config=.lighthouserc.json
+
 # ─────────────────────────────────────────────────────────────
 # 4️⃣  Packaging Docker (optionnel) – trace performance image
 # ─────────────────────────────────────────────────────────────

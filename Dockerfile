@@ -1,31 +1,25 @@
-#####################################################################
-# 1️⃣  STAGE « builder » – compile l’app React (Vite) en /dist
-#####################################################################
-FROM node:20-alpine AS builder
+# syntax=docker/dockerfile:1
 
-# ‑‑ Crée dossier de travail
+########################
+# 1. Build (Node)
+########################
+FROM node:20-alpine AS build
 WORKDIR /app
 
-# ‑‑ Copie package.json + lockfile et installe en mode CI
+# Installe TOUTES les deps (y compris dev) pour pouvoir builder
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci
 
-# ‑‑ Copie l’ensemble du code puis build
+# Copie le code et build
 COPY . .
-RUN npm run build          # => /app/dist
+RUN npm run build    # produit /app/dist
 
-#####################################################################
-# 2️⃣  STAGE « runtime » – sert les fichiers statiques avec Nginx
-#####################################################################
+########################
+# 2. Runtime (Nginx)
+########################
 FROM nginx:1.25-alpine AS runtime
-
-# ‑‑ Copie la build dans le dossier web d’Nginx
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# ‑‑ Remplace la conf par défaut pour gérer le fallback SPA
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copie le build statique dans nginx
+COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80
-HEALTHCHECK CMD curl -f http://localhost/ || exit 1
-
 CMD ["nginx", "-g", "daemon off;"]

@@ -9,7 +9,9 @@
     "lint": "npm run clean-spaces && eslint . --ext .js,.jsx --fix",
     "preview": "vite preview",
     "fix-tests": "node fix-eslint-tests.cjs",
-    "test": "jest"
+    "test": "jest",
+    "lhci": "lhci autorun --config=.lighthouserc.json"
+
   },
   "dependencies": {
     "@cookie-consent/react": "^1.11.20",

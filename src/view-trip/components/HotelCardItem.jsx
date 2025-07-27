@@ -1,15 +1,16 @@
 /* eslint-env browser */
 import React, { useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
 import { FaMapMarkerAlt, FaEuroSign, FaStar } from 'react-icons/fa';
 import { GetPlaceDetails } from '~/service/GlobalApi';
-import env from '~/lib/env';
+import PropTypes from 'prop-types';
 
-const API_KEY  = env.VITE_GOOGLE_PLACE_API_KEY || 'test-key';
+const API_KEY = import.meta.env?.VITE_GOOGLE_PLACE_API_KEY || 'test-key';
+
 const FALLBACK = '/placeholder.png';
 
 const buildPhotoURL = (name) =>
   `https://places.googleapis.com/v1/${name}/media?maxHeightPx=1000&maxWidthPx=1200&key=${API_KEY}`;
+  
 
 export default function HotelCardItem({ hotel }) {
   const {
@@ -88,12 +89,14 @@ export default function HotelCardItem({ hotel }) {
   );
 }
 
+
 HotelCardItem.propTypes = {
   hotel: PropTypes.shape({
     hotelName: PropTypes.string,
     displayName: PropTypes.string,
     hotelAddress: PropTypes.string,
-    price: PropTypes.string,
-    rating: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  }),
+    price: PropTypes.number,
+    rating: PropTypes.number,
+  }).isRequired,
 };
+

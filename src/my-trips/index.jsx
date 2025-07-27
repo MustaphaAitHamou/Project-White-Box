@@ -1,68 +1,64 @@
-// src/my-trips/index.jsx
-import React from 'react';
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '~/service/firebaseConfig';
+import React, { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { collection, query, where, getDocs } from "firebase/firestore"
+import { db } from "~/service/firebaseConfig"
+import UserTripCardItem from "./components/UserTripCardItem"
+import Footer from "~/view-trip/components/Footer"
 
 export default function MyTrips() {
-  const [trips, setTrips] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate()
+  const [userTrips, setUserTrips] = useState([])
 
-  const email = (() => {
-    try { return JSON.parse(localStorage.getItem('user'))?.email; } catch { return null; }
-  })();
-
+  /* Charge les voyages de l’utilisateur connecté */
   useEffect(() => {
-    (async () => {
-      try {
-        const baseCol = collection(db, 'AITrips');
-        const q = email ? query(baseCol, where('user.email', '==', email)) : baseCol;
-        const snap = await getDocs(q);
-        setTrips(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [email]);
+    ;(async () => {
+      const stored = localStorage.getItem("user")
+      if (!stored) return navigate("/")
 
-  if (loading) return <p className="py-20 text-center">Chargement…</p>;
-
-  if (!trips.length) {
-    return (
-      <div className="text-center space-y-4 py-20">
-        <p>Aucun voyage trouvé</p>
-        <Link
-          to="/create-trip"
-          className="inline-block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-        >
-          Créer un nouveau voyage
-        </Link>
-      </div>
-    );
-  }
+      const { email } = JSON.parse(stored)
+      const snap      = await getDocs(
+        query(collection(db, "AITrips"), where("userEmail", "==", email))
+      )
+      setUserTrips(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {trips.map((t) => {
-        const label  = t?.userSelection?.location?.label || 'Voyage';
-        const days   = t?.userSelection?.noOfDays;
-        const budget = t?.userSelection?.budget;
-        return (
-          <Link
-            key={t.id}
-            to={`/view-trip/${t.id}`}
-            className="block rounded-xl bg-white shadow p-4 hover:shadow-md transition"
-          >
-            <h3 className="font-semibold text-indigo-700">{label}</h3>
-            <p className="text-sm text-gray-600">
-              {days ? `${days} jours` : ''}{budget ? ` • ${budget}` : ''}
-            </p>
-          </Link>
-        );
-      })}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700">
+      <section className="pt-28 pb-20 px-6 md:px-32">
+        <div className="bg-white/80 backdrop-blur-lg border border-white/30 rounded-3xl p-10 shadow-2xl">
+          <h2 className="text-4xl font-extrabold text-gray-800 mb-10">
+            Mes voyages
+          </h2>
+
+          {/* Aucun voyage */}
+          {userTrips.length === 0 ? (
+            <div className="flex flex-col items-center py-24">
+              <p className="text-lg text-gray-600 mb-6">
+                Aucun voyage trouvé.
+              </p>
+              <button
+                onClick={() => navigate("/create-trip")}
+                className="bg-gray-800 hover:bg-gray-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg transition-transform hover:-translate-y-0.5"
+              >
+                Créer un nouveau voyage
+              </button>
+            </div>
+          ) : (
+            /* Grille de voyages */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {userTrips.map((trip) => (
+                <UserTripCardItem key={trip.id} trip={trip} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <Footer />
+
     </div>
-  );
+    
+  )
 }

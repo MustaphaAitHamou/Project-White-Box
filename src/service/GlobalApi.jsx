@@ -1,23 +1,17 @@
-/* eslint-env browser, node */
-import axios from 'axios';
-import env from '~/lib/env';
+import axios from "axios";
 
-const API_KEY = env.VITE_GOOGLE_PLACE_API_KEY || 'test-key';
-
-const SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText';
-const SEARCH_CONF = {
+const BASE_URL = "https://places.googleapis.com/v1/places:searchText";
+const config = {
   headers: {
-    'Content-Type'   : 'application/json',
-    'X-Goog-Api-Key' : API_KEY,
-    'X-Goog-FieldMask':
-      'places.id,places.displayName,places.formattedAddress,' +
-      'places.location,places.rating,places.priceLevel,places.photos',
-  },
+    "Content-Type": "application/json",
+    "X-Goog-Api-Key": import.meta.env.VITE_GOOGLE_PLACE_API_KEY,
+    "X-Goog-FieldMask": "places.photos,places.displayName,places.id,places.location"
+  }
 };
 
-export const GetPlaceDetails = (payload) =>
-  axios.post(SEARCH_URL, payload, SEARCH_CONF);
 
-export const GetPlacePhoto = (photoRef, max = 1000) =>
-  `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${max}` +
-  `&photoreference=${encodeURIComponent(photoRef)}&key=${API_KEY}`;
+export const GetPlaceDetails = (data) => {
+  return axios.post(BASE_URL, data, config);
+};
+
+export const PHOTO_REF_URL='https://maps.googleapis.com/maps/api/place/photo'

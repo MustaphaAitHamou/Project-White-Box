@@ -261,105 +261,105 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/* eslint-env browser */
-import React, { useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
-import { FaMapMarkerAlt, FaEuroSign, FaStar } from 'react-icons/fa';
-import { GetPlaceDetails } from '~/service/GlobalApi';
-import env from '~/lib/env';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">  /* eslint-env browser */
+  import React, { useEffect, useState } from 'react';
+  import PropTypes from 'prop-types';
+  import { FaMapMarkerAlt, FaEuroSign, FaStar } from 'react-icons/fa';
+  import { GetPlaceDetails } from '~/service/GlobalApi';
+  import env from '~/lib/env';
 &nbsp;
-const API_KEY  = env.VITE_GOOGLE_PLACE_API_KEY || <span class="branch-1 cbranch-no" title="branch not covered" >'test-key';</span>
-const FALLBACK = '/placeholder.png';
+  const API_KEY  = env.VITE_GOOGLE_PLACE_API_KEY || <span class="branch-1 cbranch-no" title="branch not covered" >'test-key';</span>
+  const FALLBACK = '/placeholder.png';
 &nbsp;
-const buildPhotoURL = (name) =&gt;
-  `https://places.googleapis.com/v1/${name}/media?maxHeightPx=1000&amp;maxWidthPx=1200&amp;key=${API_KEY}`;
+  const buildPhotoURL = (name) =&gt;
+    `https://places.googleapis.com/v1/${name}/media?maxHeightPx=1000&amp;maxWidthPx=1200&amp;key=${API_KEY}`;
 &nbsp;
-export default function HotelCardItem({ hotel }) {
-  const {
-    hotelName: rawHotelName,
-    displayName,
-    hotelAddress = <span class="branch-0 cbranch-no" title="branch not covered" >'Adresse inconnue',</span>
-    price,
-    rating,
-  } = hotel || <span class="branch-1 cbranch-no" title="branch not covered" >{};</span>
+  export default function HotelCardItem({ hotel }) {
+    const {
+      hotelName: rawHotelName,
+      displayName,
+      hotelAddress = <span class="branch-0 cbranch-no" title="branch not covered" >'Adresse inconnue',</span>
+      price,
+      rating,
+    } = hotel || <span class="branch-1 cbranch-no" title="branch not covered" >{};</span>
 &nbsp;
-  const hotelName = rawHotelName || <span class="branch-1 cbranch-no" title="branch not covered" >displayName </span>|| <span class="branch-2 cbranch-no" title="branch not covered" >'';</span>
-  const [photoUrl, setPhotoUrl] = useState(FALLBACK);
+    const hotelName = rawHotelName || <span class="branch-1 cbranch-no" title="branch not covered" >displayName </span>|| <span class="branch-2 cbranch-no" title="branch not covered" >'';</span>
+    const [photoUrl, setPhotoUrl] = useState(FALLBACK);
 &nbsp;
-  useEffect(() =&gt; {
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (!hotelName) <span class="cstat-no" title="statement not covered" >return;</span>
-    let active = true;
+    useEffect(() =&gt; {
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (!hotelName) <span class="cstat-no" title="statement not covered" >return;</span>
+      let active = true;
 &nbsp;
-    (async () =&gt; {
-      try {
-        const { data } = await GetPlaceDetails({
-          textQuery: `${hotelName}, ${hotelAddress}`,
-        });
-        const place  = data.places?.[0];
-        const photo  = place?.photos?.[0]?.name;
-        const newURL = photo ? buildPhotoURL(photo) : <span class="branch-1 cbranch-no" title="branch not covered" >FALLBACK;</span>
-        <span class="missing-if-branch" title="else path not taken" >E</span>if (active) setPhotoUrl(newURL);
-      } catch (err) {
-<span class="cstat-no" title="statement not covered" >        console.error('❌ Photo hôtel', err?.response?.data || err);</span>
-<span class="cstat-no" title="statement not covered" >        if (active) <span class="cstat-no" title="statement not covered" >setPhotoUrl(FALLBACK);</span></span>
-      }
-    })();
+      (async () =&gt; {
+        try {
+          const { data } = await GetPlaceDetails({
+            textQuery: `${hotelName}, ${hotelAddress}`,
+          });
+          const place  = data.places?.[0];
+          const photo  = place?.photos?.[0]?.name;
+          const newURL = photo ? buildPhotoURL(photo) : <span class="branch-1 cbranch-no" title="branch not covered" >FALLBACK;</span>
+          <span class="missing-if-branch" title="else path not taken" >E</span>if (active) setPhotoUrl(newURL);
+        } catch (err) {
+<span class="cstat-no" title="statement not covered" >          console.error('❌ Photo hôtel', err?.response?.data || err);</span>
+<span class="cstat-no" title="statement not covered" >          if (active) <span class="cstat-no" title="statement not covered" >setPhotoUrl(FALLBACK);</span></span>
+        }
+      })();
 &nbsp;
-    return () =&gt; { active = false; };
-  }, [hotelName, hotelAddress]);
+      return () =&gt; { active = false; };
+    }, [hotelName, hotelAddress]);
 &nbsp;
-  const mapsUrl =
-    `https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(
-      `${hotelName} ${hotelAddress}`
-    )}`;
+    const mapsUrl =
+      `https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(
+        `${hotelName} ${hotelAddress}`
+      )}`;
 &nbsp;
-  return (
-    &lt;a
-      href={mapsUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow hover:-translate-y-0.5 hover:shadow-lg transition"
-    &gt;
-      &lt;div className="relative h-60 w-full"&gt;
-        &lt;img
-          src={photoUrl}
-          alt={hotelName}
-          onError={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; (<span class="cstat-no" title="statement not covered" >e.currentTarget.src = FALLBACK)</span>}
-          className="h-full w-full object-cover transition group-hover:scale-105"
-        /&gt;
-        {rating &amp;&amp; (
-          &lt;span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-sm font-semibold text-gray-700 shadow"&gt;
-            &lt;FaStar className="text-yellow-500" /&gt; {rating}
-          &lt;/span&gt;
-        )}
-      &lt;/div&gt;
-      &lt;div className="space-y-1 px-4 py-3 text-sm"&gt;
-        &lt;h3 className="font-semibold text-indigo-700 group-hover:underline"&gt;
-          {hotelName}
-        &lt;/h3&gt;
-        &lt;p className="flex items-start gap-1 text-gray-600"&gt;
-          &lt;FaMapMarkerAlt className="mt-0.5 shrink-0 text-gray-500" /&gt;
-          {hotelAddress}
-        &lt;/p&gt;
-        {price &amp;&amp; (
-          &lt;p className="mt-1 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700"&gt;
-            &lt;FaEuroSign /&gt; {price}
+    return (
+      &lt;a
+        href={mapsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow hover:-translate-y-0.5 hover:shadow-lg transition"
+      &gt;
+        &lt;div className="relative h-60 w-full"&gt;
+          &lt;img
+            src={photoUrl}
+            alt={hotelName}
+            onError={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; (<span class="cstat-no" title="statement not covered" >e.currentTarget.src = FALLBACK)</span>}
+            className="h-full w-full object-cover transition group-hover:scale-105"
+          /&gt;
+          {rating &amp;&amp; (
+            &lt;span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-sm font-semibold text-gray-700 shadow"&gt;
+              &lt;FaStar className="text-yellow-500" /&gt; {rating}
+            &lt;/span&gt;
+          )}
+        &lt;/div&gt;
+        &lt;div className="space-y-1 px-4 py-3 text-sm"&gt;
+          &lt;h3 className="font-semibold text-indigo-700 group-hover:underline"&gt;
+            {hotelName}
+          &lt;/h3&gt;
+          &lt;p className="flex items-start gap-1 text-gray-600"&gt;
+            &lt;FaMapMarkerAlt className="mt-0.5 shrink-0 text-gray-500" /&gt;
+            {hotelAddress}
           &lt;/p&gt;
-        )}
-      &lt;/div&gt;
-    &lt;/a&gt;
-  );
-}
+          {price &amp;&amp; (
+            &lt;p className="mt-1 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700"&gt;
+              &lt;FaEuroSign /&gt; {price}
+            &lt;/p&gt;
+          )}
+        &lt;/div&gt;
+      &lt;/a&gt;
+    );
+  }
 &nbsp;
-HotelCardItem.propTypes = {
-  hotel: PropTypes.shape({
-    hotelName: PropTypes.string,
-    displayName: PropTypes.string,
-    hotelAddress: PropTypes.string,
-    price: PropTypes.string,
-    rating: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  }),
-};
+  HotelCardItem.propTypes = {
+    hotel: PropTypes.shape({
+      hotelName: PropTypes.string,
+      displayName: PropTypes.string,
+      hotelAddress: PropTypes.string,
+      price: PropTypes.string,
+      rating: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    }),
+  };
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -367,7 +367,7 @@ HotelCardItem.propTypes = {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-26T00:26:12.705Z
+                at 2025-07-26T12:13:47.007Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

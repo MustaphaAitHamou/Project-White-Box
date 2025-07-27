@@ -1,220 +1,401 @@
-/* eslint-env browser */
-import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { useGoogleLogin, googleLogout } from '@react-oauth/google';
-
-import { Button } from '@/components/ui/button';
+/* ------------------------------------------------------------------
+   src/components/custom/Header.jsx
+   – Gestion utilisateur + export JSON complet des voyages
+------------------------------------------------------------------- */
+import React, { useState, useRef, useEffect } from "react";
+import { Button } from "../ui/button";
+import { useGoogleLogin, googleLogout } from "@react-oauth/google";
+import { FcGoogle } from "react-icons/fc";
+import { X } from "lucide-react";
+import axios from "axios";
+import { toast } from "sonner";
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from '@/components/ui/popover';
+} from "@/components/ui/popover";
 import {
   Dialog,
   DialogOverlay,
   DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogClose,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
+import {
+  FaSignOutAlt,
+  FaFileDownload,
+  FaTrashAlt,
+  FaSpinner,
+} from "react-icons/fa";
+import { db } from "@/service/firebaseConfig";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  deleteDoc,
+  doc as docRef,
+} from "firebase/firestore";
+import ReCAPTCHA from "react-google-recaptcha";
 
-import { FcGoogle } from 'react-icons/fc';
-import { X } from 'lucide-react';
+/* ------------------------------------------------------------------ */
+/*  utils                                                               */
+/* ------------------------------------------------------------------ */
 
-// Helper: download any JS object as JSON file
-function downloadJSON(obj, filename = 'tripgenius-data.json') {
+/** Déclenche un téléchargement (client‐side, sans lib externe) */
+function downloadJSON(obj, filename = "tripgenius-data.json") {
   const blob = new Blob([JSON.stringify(obj, null, 2)], {
-    type: 'application/json',
+    type: "application/json",
   });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
+  a.remove();
   URL.revokeObjectURL(url);
 }
 
+/* ------------------------------------------------------------------ */
+/*  config                                                             */
+/* ------------------------------------------------------------------ */
+
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+// Jest n'accepte pas import.meta.env → on lit d'abord process.env (Jest),
+// puis éventuellement une variable globale injectée au runtime.
+const RECAPTCHA_KEY =
+   typeof window !== "undefined" && window.__ENV__?.VITE_RECAPTCHA_SITE_KEY
+     ? window.__ENV__.VITE_RECAPTCHA_SITE_KEY
+     : "";
+const useRecaptcha = Boolean(RECAPTCHA_KEY) && !isIOS;
+
+/* ------------------------------------------------------------------ */
+/*  composant                                                           */
+/* ------------------------------------------------------------------ */
+
 export default function Header() {
-  // Load user from localStorage
+  /* ---------- état utilisateur ---------- */
   const [user, setUser] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('user'));
+      return JSON.parse(localStorage.getItem("user") || "null");
     } catch {
       return null;
     }
   });
 
-  // Sync across tabs
+  /* ---------- autres états ---------- */
+  const [showLogin, setShowLogin]   = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [agree, setAgree]           = useState(false);
+  const [error, setError]           = useState("");
+  const [exporting, setExporting]   = useState(false);
+
+  const recaptchaRef = useRef(null);
+
+  /* ----------------------------------------------------------------
+     synchro cross‑tab
+  ---------------------------------------------------------------- */
   useEffect(() => {
-    const handler = () => {
+    const syncUser = () => {
       try {
-        setUser(JSON.parse(localStorage.getItem('user')));
+        setUser(JSON.parse(localStorage.getItem("user") || "null"));
       } catch {
         setUser(null);
       }
     };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
+    window.addEventListener("storage", syncUser);
+    window.addEventListener("userChanged", syncUser);
+    return () => {
+      window.removeEventListener("storage", syncUser);
+      window.removeEventListener("userChanged", syncUser);
+    };
   }, []);
 
-  // Login dialog state
-  const [showLogin, setShowLogin] = useState(false);
-  const [agree, setAgree] = useState(false);
-  const [error, setError] = useState('');
-
-  const RECAPTCHA_REF = useRef(null)
-
-  // Google login hook
+  /* ----------------------------------------------------------------
+     OAuth Google
+  ---------------------------------------------------------------- */
   const login = useGoogleLogin({
-    onSuccess: async ({ access_token }) => {
-      try {
-        // Fetch Google profile
-        const { data } = await axios.get(
-          `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${access_token}`
-        );
-        localStorage.setItem('user', JSON.stringify(data));
-        setUser(data);
-        setShowLogin(false);
-        setError('');
-      } catch {
-        setError('Impossible de récupérer le profil Google.');
-      }
-    },
-    onError: () => setError('Échec de l’authentification Google.'),
-    scope: 'openid email profile',
-    ux_mode: 'popup',
+    onSuccess: handleProfile,
+    onError  : () => toast.error("Échec de l’authentification Google"),
+    scope    : "openid email profile",
+    ux_mode  : isIOS ? "redirect" : "popup",
+    redirect_uri: window.location.origin + "/",
   });
 
-  // Trigger login when consent given
-  const handleContinue = () => {
-    if (!agree) {
-      setError('Vous devez accepter la collecte de données.');
+  async function handleProfile({ access_token }) {
+    try {
+      const { data } = await axios.get(
+        `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${access_token}`,
+      );
+      localStorage.setItem("user", JSON.stringify(data));
+      window.dispatchEvent(new Event("userChanged"));
+      setUser(data);
+      setShowLogin(false);
+    } catch {
+      toast.error("Impossible de récupérer les informations Google");
+    }
+  }
+
+  /* ----------------------------------------------------------------
+     reCAPTCHA
+  ---------------------------------------------------------------- */
+  const onRecaptchaDone = (token) => {
+    if (!token) {
+      toast.error("Échec reCAPTCHA, réessayez.");
       return;
     }
-    setError('');
+    recaptchaRef.current.reset();
     login();
   };
 
-  // Logout
-  const handleLogout = () => {
+  const handleContinue = () => {
+    if (!agree) {
+      setError("Vous devez accepter la collecte de données.");
+      return;
+    }
+    if (useRecaptcha) recaptchaRef.current.execute();
+    else login();
+  };
+
+  /* ----------------------------------------------------------------
+     logout + suppression compte
+  ---------------------------------------------------------------- */
+  const logout = () => {
     googleLogout();
-    localStorage.removeItem('user');
+    localStorage.removeItem("user");
+    window.dispatchEvent(new Event("userChanged"));
     setUser(null);
   };
 
-  // Download user data placeholder (trips must be fetched separately)
-  const handleDownload = () => {
-    const data = { user, trips: [] };
-    downloadJSON(data);
+  const deleteAccount = async () => {
+    if (!user) return;
+    if (confirmEmail !== user.email) {
+      toast.error("E‑mail incorrect.");
+      return;
+    }
+    try {
+      const q = query(
+        collection(db, "AITrips"),
+        where("userEmail", "==", user.email),
+      );
+      const snap = await getDocs(q);
+      await Promise.all(
+        snap.docs.map((d) => deleteDoc(docRef(db, "AITrips", d.id))),
+      );
+      await deleteDoc(docRef(db, "consents", user.id));
+      logout();
+      toast.success("Compte supprimé.");
+    } catch (err) {
+      toast.error("Erreur suppression : " + err.message);
+    }
   };
 
+  /* ----------------------------------------------------------------
+     export JSON complet
+  ---------------------------------------------------------------- */
+  const exportData = async () => {
+    if (!user) return;
+    setExporting(true);
+    try {
+      // Récupère tous les voyages de l’utilisateur
+      const q = query(
+        collection(db, "AITrips"),
+        where("userEmail", "==", user.email),
+      );
+      const snap = await getDocs(q);
+      const trips = snap.docs.map((d) => d.data());
+
+      if (!trips.length) {
+        toast.info("Aucun voyage à exporter.");
+      } else {
+        downloadJSON({ user, trips }, "tripgenius-data.json");
+        toast.success("Export JSON téléchargé !");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Erreur export : " + err.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  /* ============================= RENDER ========================== */
   return (
-    <header className="fixed top-0 z-50 w-full backdrop-blur-md bg-transparent">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        {/* Logo */}
-        <a href="/" className="flex items-center space-x-2">
-          <img src="/logo.svg" alt="Logo" className="h-8 w-8" />
-          <span className="text-xl font-bold text-white">TripGenius</span>
-        </a>
-
-        {/* Nav links */}
-        <nav className="space-x-8">
-          <a href="/create-trip" className="text-gray-300 hover:text-white">
-            Planifier
+    <>
+      {/* ------------------ Navbar ------------------ */}
+      <header className="fixed top-0 z-50 w-full backdrop-blur-md shadow bg-transparent">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+          <a href="/" className="flex items-center space-x-2">
+            <img src="/logo.svg" alt="Logo" className="h-8" />
+            <span className="text-xl font-bold text-white">TripGenius</span>
           </a>
-          <a href="/my-trips" className="text-gray-300 hover:text-white">
-            Mes voyages
-          </a>
-        </nav>
 
-        {/* User / Connexion */}
-        <div>
+          <nav className="flex flex-col items-start gap-4 md:flex-row md:items-center md:gap-6">
+            <a href="/create-trip" className="text-white hover:text-indigo-200">
+              Planifier
+            </a>
+            {user && (
+              <a href="/my-trips" className="text-white hover:text-indigo-200">
+                Mes voyages
+              </a>
+            )}
+          </nav>
+
+          {/* --------- zone droite --------- */}
           {user ? (
             <Popover>
               <PopoverTrigger asChild>
                 <img
                   src={user.picture}
                   alt="avatar"
-                  className="h-10 w-10 rounded-full ring-2 ring-indigo-500 cursor-pointer"
+                  className="h-10 w-10 cursor-pointer rounded-full ring-2 ring-indigo-400"
                 />
               </PopoverTrigger>
-              <PopoverContent
-                align="end"
-                className="w-48 bg-white rounded-lg shadow-lg p-2"
-              >
+              <PopoverContent align="end" className="w-56 rounded-lg p-2 shadow-lg bg-white">
                 <Button
-                  variant="outline"
+                  onClick={logout}
+                  variant="ghost"
                   size="sm"
-                  className="w-full mb-2 text-left"
-                  onClick={handleLogout}
+                  className="w-full justify-start"
                 >
-                  Se déconnecter
+                  <FaSignOutAlt className="mr-2" /> Se déconnecter
                 </Button>
+
                 <Button
-                  variant="outline"
+                  onClick={exportData}
+                  variant="ghost"
                   size="sm"
-                  className="w-full mb-2 text-left"
-                  onClick={handleDownload}
+                  className="w-full justify-start"
+                  disabled={exporting}
                 >
+                  {exporting ? (
+                    <FaSpinner className="mr-2 animate-spin" />
+                  ) : (
+                    <FaFileDownload className="mr-2" />
+                  )}
                   Télécharger mes données
                 </Button>
-                <Button variant="destructive" size="sm" className="w-full text-left">
-                  Supprimer mon compte
+
+                <Button
+                  onClick={() => setShowDelete(true)}
+                  variant="solid"
+                  size="sm"
+                  className="w-full justify-center bg-red-600 text-white"
+                >
+                  <FaTrashAlt className="mr-2" /> Supprimer mon compte
                 </Button>
               </PopoverContent>
             </Popover>
           ) : (
             <Button
               onClick={() => setShowLogin(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              variant="gradient"
+              className="rounded-full bg-gradient-to-r from-purple-600 to-blue-500 px-6 py-2 text-white shadow-lg"
             >
-              Connexion
+              Se connecter
             </Button>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Login Dialog */}
+      {/* ---------------- Dialog Login ---------------- */}
       <Dialog open={showLogin} onOpenChange={setShowLogin}>
         <DialogOverlay />
-        <DialogContent className="max-w-md mx-auto mt-16 p-6 bg-white rounded-lg shadow-lg">
-          <DialogTitle className="text-center text-2xl font-bold mb-4">
-            Connexion Google
-          </DialogTitle>
-          <DialogDescription className="text-center text-gray-600 mb-6">
-            Authentifiez‑vous pour commencer votre aventure.
-          </DialogDescription>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex flex-col items-center gap-3">
+              <img src="/logo.svg" alt="Logo" className="h-12" />
+              Connexion Google
+            </DialogTitle>
+            <DialogDescription className="text-center text-gray-600">
+              Authentifiez‑vous pour commencer votre aventure.
+            </DialogDescription>
+          </DialogHeader>
 
-          <div className="flex items-center mb-4">
+          <div className="mt-4 flex items-start gap-2">
             <input
-              id="consent"
+              id="rgpd"
               type="checkbox"
               checked={agree}
-              onChange={(e) => setAgree(e.target.checked)}
-              className="mr-2"
+              onChange={(e) => {
+                setAgree(e.target.checked);
+                setError("");
+              }}
+              className="mt-1"
             />
-            <label htmlFor="consent" className="text-gray-700">
-              J’accepte l’utilisation de mes données.
+            <label htmlFor="rgpd" className="text-sm text-gray-700">
+              J’accepte l’utilisation de mes données par TripGenius.
             </label>
           </div>
-          {error && <p className="text-red-500 mb-4">{error}</p>}
+          {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
 
           <Button
+            className="mt-6 flex w-full items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-500 text-white"
             onClick={handleContinue}
-            className="flex items-center justify-center w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white mb-4"
           >
-            <FcGoogle className="mr-2" /> Continuer avec Google
+            <FcGoogle className="h-6 w-6" /> Continuer avec Google
           </Button>
 
+          {useRecaptcha && (
+            <ReCAPTCHA
+              ref={recaptchaRef}
+              size="invisible"
+              sitekey={RECAPTCHA_KEY}
+              onChange={onRecaptchaDone}
+              onErrored={() => {
+                toast.error("reCAPTCHA hors‑service, connexion directe.");
+                login();
+              }}
+            />
+          )}
+
           <DialogClose asChild>
-            <button className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-200">
-              <X size={20} />
+            <button
+              type="button"
+              aria-label="Fermer"
+              className="absolute top-4 right-4 rounded-full bg-white p-2 shadow"
+            >
+              <X className="h-4 w-4 text-gray-600" />
             </button>
           </DialogClose>
         </DialogContent>
       </Dialog>
-    </header>
+
+      {/* -------------- Dialog suppression -------------- */}
+      <Dialog open={showDelete} onOpenChange={setShowDelete}>
+        <DialogOverlay />
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-red-600 text-center">
+              Suppression du compte
+            </DialogTitle>
+            <DialogDescription className="text-center mb-4">
+              Saisis ton e‑mail pour confirmer :
+            </DialogDescription>
+          </DialogHeader>
+
+          <input
+            type="email"
+            value={confirmEmail}
+            onChange={(e) => setConfirmEmail(e.target.value)}
+            placeholder="votre.email@exemple.com"
+            className="mb-6 w-full rounded border border-gray-300 px-3 py-2 focus:outline-none"
+          />
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowDelete(false)}>
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={deleteAccount}>
+              Confirmer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

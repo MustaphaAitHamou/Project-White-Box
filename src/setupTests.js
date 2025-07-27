@@ -12,11 +12,17 @@ if (!global.TextDecoder) global.TextDecoder = TextDecoder;
 if (typeof window !== "undefined" && !window.scrollTo)
   window.scrollTo = () => {};
 
-  globalThis.importMetaEnv ??= {
-    VITE_GOOGLE_PLACE_API_KEY: 'test-key',
-    VITE_GOOGLE_GEMINI_AI_API_KEY: 'test-gemini',
-    VITE_GOOGLE_AUTH_CLIENT_ID: 'test-client',
+  globalThis.importMetaEnv = {
+  VITE_GOOGLE_PLACE_API_KEY: 'mock-key',
+  VITE_GOOGLE_GEMINI_AI_API_KEY: 'mock-gemini',
+  VITE_GOOGLE_AUTH_CLIENT_ID: 'mock-client',
+};
+
+
+  globalThis.importMetaEnv = {
+    VITE_GOOGLE_PLACE_API_KEY: 'mocked-key',
   };
+  
 
 globalThis.importMetaEnv = { VITE_GOOGLE_PLACE_API_KEY: "test-key" };
 
@@ -208,3 +214,4 @@ jest.mock(
   },
   { virtual: true }
 );
+

@@ -5,9 +5,8 @@ import { FaMapLocationDot } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import { Button } from '~/components/ui/button';
 import { GetPlaceDetails } from '~/service/GlobalApi';
-import env from '~/lib/env';
 
-const API_KEY  = env.VITE_GOOGLE_PLACE_API_KEY || 'test-key';
+const API_KEY = import.meta.env.VITE_GOOGLE_PLACE_API_KEY || 'test-key';
 const FALLBACK = '/placeholder.png';
 
 const buildPhotoURL = (name) =>
@@ -52,7 +51,9 @@ export default function PlaceCardItem({
       }
     })();
 
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [placeName, destinationLabel]);
 
   return (
@@ -74,7 +75,9 @@ export default function PlaceCardItem({
 
         <div className="mt-4 flex items-center justify-between text-sm">
           <span className="inline-flex items-center gap-1 text-gray-700">
-            <span role="img" aria-label="time">⏱</span>
+            <span role="img" aria-label="time">
+              ⏱
+            </span>
             {timeToTravel}
           </span>
 
@@ -90,9 +93,9 @@ export default function PlaceCardItem({
 }
 
 PlaceCardItem.propTypes = {
-  placeName        : PropTypes.string,
-  details          : PropTypes.string,
-  timeToTravel     : PropTypes.string,
-  slotLabel        : PropTypes.string,
-  destinationLabel : PropTypes.string,
+  placeName: PropTypes.string,
+  details: PropTypes.string,
+  timeToTravel: PropTypes.string,
+  slotLabel: PropTypes.string,
+  destinationLabel: PropTypes.string,
 };

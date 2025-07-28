@@ -11,7 +11,7 @@ export default function Footer() {
         <Link to="/sitemap" className="text-violet-400 hover:underline">Plan du site</Link>
         <Link to="/contact" className="text-violet-400 hover:underline">Contact</Link>
         <a
-          href="https://coff.ee/aknanirnathyetturagh"
+          href="https://coff.ee/aknanirnathyetturagh" 
           target="_blank"
           rel="noopener noreferrer"
           className="text-violet-400 hover:underline"

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-950 text-white py-6 px-4 text-center space-y-3">
+    <footer className="bg-slate-950 text-white py-6 px-4 text-center space-y-3"> 
       <div className="space-x-4">
         <Link to="/privacy-policy" className="text-violet-400 hover:underline">Confidentialité</Link>
         <Link to="/cookie-settings" className="text-violet-400 hover:underline">Cookies</Link>

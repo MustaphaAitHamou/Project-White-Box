@@ -2,20 +2,14 @@ name: CI‑CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, preprod ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
-    inputs:
-      deploy-prod:
-        description: "Déployer en production ? (yes/no)"
-        required: false
-        default: "no"
 
 env:
   NODE_VERSION: "20"
   BUILD_DIR: "dist"
-  REMOTE_DIR: "/var/www/tripgenius"          # dossier sur Iglao
   LC_ALL: "C.UTF-8"
 
 jobs:
@@ -36,7 +30,7 @@ jobs:
         run: npm ci
 
       - name: Lint & type‑check
-        run: npm run lint   # -> eslint + tsc --noEmit
+        run: npm run lint
 
       - name: Build (Vite)
         run: npm run build
@@ -48,7 +42,7 @@ jobs:
           path: ${{ env.BUILD_DIR }}
 
 # ─────────────────────────────────────────────────────────────
-# 2️⃣  Tests unitaires  + couverture  (Vitest + Codecov)
+# 2️⃣  Tests unitaires + couverture (Vitest + Codecov)
 # ─────────────────────────────────────────────────────────────
   test:
     needs: build
@@ -75,7 +69,7 @@ jobs:
           fail_ci_if_error: true
 
 # ─────────────────────────────────────────────────────────────
-# 3️⃣  Packaging Docker (optionnel) – trace performance image
+# 3️⃣  Packaging Docker (optionnel)
 # ─────────────────────────────────────────────────────────────
   package:
     needs: test
@@ -92,33 +86,28 @@ jobs:
           path: image.tar.gz
 
 # ─────────────────────────────────────────────────────────────
-# 4️⃣  Déploiement sur Iglao  (SSH + rsync)
+# 4️⃣  Déploiement préproduction sur Vercel (branche preprod)
 # ─────────────────────────────────────────────────────────────
-  deploy-prod:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy-prod == 'yes'
-    needs: package
+  deploy-preprod:
+    if: github.ref == 'refs/heads/preprod'
+    needs: test
     runs-on: ubuntu-latest
-    environment: production
+    environment: preproduction
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: site-build
-          path: ${{ env.BUILD_DIR }}
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.IGLAO_SSH_KEY }}
+      - name: Install Vercel CLI
+        run: npm install --global vercel
 
-      - name: Add Iglao to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.IGLAO_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+      - name: Pull config Vercel
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-      - name: Rsync to server
-        run: |
-          rsync -avz --delete ${{ env.BUILD_DIR }}/ \
-            ${{ secrets.IGLAO_USER }}@${{ secrets.IGLAO_HOST }}:${{ env.REMOTE_DIR }}
-
-      - name: Smoke‑test production URL
-        run: curl -f https://tripgenius.eu || exit 1
+      - name: Deploy to Vercel Preview
+        run: vercel --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

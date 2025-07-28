@@ -3,22 +3,25 @@ import { Link } from 'react-router-dom';
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-900 text-slate-400 border-t border-white/10">
-      <div className="max-w-6xl mx-auto px-6 py-10 text-center space-y-6">
-        <p className="text-sm">
-          Créé avec ❤️ par&nbsp;
-          <span className="font-semibold text-violet-400">
-            Aknanir nAth Yetturagh
-          </span>
-        </p>
-
-        <nav className="flex flex-wrap justify-center gap-6 text-sm">
-          <Link to="/privacy-policy"  className="hover:text-violet-300">Politique de confidentialité</Link>
-          <Link to="/cookie-settings" className="hover:text-violet-300">Paramètres des cookies</Link>
-          <Link to="/legal-mentions"  className="hover:text-violet-300">Mentions légales</Link>
-          <Link to="/sitemap"         className="hover:text-violet-300">Plan du site</Link>
-        </nav>
+    <footer className="bg-slate-950 text-white py-6 px-4 text-center space-y-3">
+      <div className="space-x-4">
+        <Link to="/privacy-policy" className="text-violet-400 hover:underline">Confidentialité</Link>
+        <Link to="/cookie-settings" className="text-violet-400 hover:underline">Cookies</Link>
+        <Link to="/legal-mentions" className="text-violet-400 hover:underline">Mentions légales</Link>
+        <Link to="/sitemap" className="text-violet-400 hover:underline">Plan du site</Link>
+        <Link to="/contact" className="text-violet-400 hover:underline">Contact</Link>
+        <a
+          href="https://coff.ee/aknanirnathyetturagh"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-violet-400 hover:underline"
+        >
+          ☕ Buy me a coffee
+        </a>
       </div>
+      <p className="text-sm text-gray-400 mt-2">
+        © {new Date().getFullYear()} TripGenius. Tous droits réservés.
+      </p>
     </footer>
   );
 }

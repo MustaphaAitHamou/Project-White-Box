@@ -13,7 +13,7 @@ export default function Footer() {
         <a
           href="https://coff.ee/aknanirnathyetturagh" 
           target="_blank"
-          rel="noopener noreferrer"
+          rel="noopener noreferrer" 
           className="text-violet-400 hover:underline" 
         >
           ☕ Buy me a coffee

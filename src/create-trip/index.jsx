@@ -1,18 +1,18 @@
 /* ------------------------------------------------------------------
    src/create-trip/index.jsx
 ------------------------------------------------------------------- */
-import React, { useState } from 'react';
-import axios from 'axios';
-import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
+import React, { useState } from "react";
+import axios from "axios";
+import GooglePlacesAutocomplete from "react-google-places-autocomplete";
 import {
   AI_PROMPT,
   SelectBudgetOptions,
   SelectTravelesList,
-} from '~/constants/options';
-import { Input } from '~/components/ui/input';
-import { Button } from '~/components/ui/button';
-import { toast } from 'sonner';
-import { generateTripPlan } from '~/service/AIModal';
+} from "~/constants/options";
+import { Input } from "~/components/ui/input";
+import { Button } from "~/components/ui/button";
+import { toast } from "sonner";
+import { generateTripPlan } from "~/service/AIModal";
 import {
   Dialog,
   DialogOverlay,
@@ -21,15 +21,15 @@ import {
   DialogTitle,
   DialogDescription,
   DialogClose,
-} from '~/components/ui/dialog';
-import { FcGoogle } from 'react-icons/fc';
-import { X } from 'lucide-react';
-import { useGoogleLogin } from '@react-oauth/google';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '~/service/firebaseConfig';
-import { useNavigate } from 'react-router-dom';
-import Footer from '~/view-trip/components/Footer';
-import { AiOutlineLoading3Quarters } from 'react-icons/ai';
+} from "~/components/ui/dialog";
+import { FcGoogle } from "react-icons/fc";
+import { X } from "lucide-react";
+import { useGoogleLogin } from "@react-oauth/google";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "~/service/firebaseConfig";
+import { useNavigate } from "react-router-dom";
+import Footer from "~/view-trip/components/Footer";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 export default function CreateTrip() {
   const [place, setPlace] = useState(null);
@@ -37,7 +37,7 @@ export default function CreateTrip() {
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
-  const [consentError, setConsentError] = useState('');
+  const [consentError, setConsentError] = useState("");
 
   const navigate = useNavigate();
   const update = (k, v) => setFormData((p) => ({ ...p, [k]: v }));
@@ -46,12 +46,12 @@ export default function CreateTrip() {
     onSuccess: async ({ access_token }) => {
       try {
         const { data } = await axios.get(
-          `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${access_token}`,
+          `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${access_token}`
         );
-        localStorage.setItem('user', JSON.stringify(data));
-        window.dispatchEvent(new Event('userChanged'));
+        localStorage.setItem("user", JSON.stringify(data));
+        window.dispatchEvent(new Event("userChanged"));
 
-        await setDoc(doc(db, 'consents', data.id), {
+        await setDoc(doc(db, "consents", data.id), {
           email: data.email,
           consent: true,
           timestamp: new Date().toISOString(),
@@ -60,50 +60,49 @@ export default function CreateTrip() {
         setOpenDialog(false);
         generateTrip();
       } catch {
-        toast.error('Impossible de récupérer le profil Google');
+        toast.error("Impossible de récupérer le profil Google");
       }
     },
     onError: () => toast.error("Échec de l'authentification Google"),
-    ux_mode: 'popup',
-    scope: 'openid email profile',
+    ux_mode: "popup",
+    scope: "openid email profile",
   });
 
   async function generateTrip() {
     setLoading(true);
 
-    if (!localStorage.getItem('user')) {
+    if (!localStorage.getItem("user")) {
       setOpenDialog(true);
       return;
     }
 
     const { location, noOfDays, budget, traveler } = formData;
     if (!location || !noOfDays || !budget || !traveler) {
-      toast.error('Veuillez remplir tous les champs');
+      toast.error("Veuillez remplir tous les champs");
       setLoading(false);
       return;
     }
 
-    const prompt = AI_PROMPT
-      .replace('{location}', location.label)
+    const prompt = AI_PROMPT.replace("{location}", location.label)
       .replace(/{totalDays}/g, noOfDays)
-      .replace('{traveler}', traveler)
-      .replace('{budget}', budget);
+      .replace("{traveler}", traveler)
+      .replace("{budget}", budget);
 
     try {
       const res = await generateTripPlan(prompt);
 
       const id = Date.now().toString();
-      await setDoc(doc(db, 'AITrips', id), {
+      await setDoc(doc(db, "AITrips", id), {
         userSelection: formData,
         TripData: res,
-        userEmail: JSON.parse(localStorage.getItem('user')).email,
+        userEmail: JSON.parse(localStorage.getItem("user")).email,
         id,
       });
 
       navigate(`/view-trip/${id}`);
     } catch (err) {
       console.error(err);
-      toast.error('Erreur lors de la génération');
+      toast.error("Erreur lors de la génération");
     } finally {
       setLoading(false);
     }
@@ -124,7 +123,10 @@ export default function CreateTrip() {
               <div className="space-y-8">
                 {/* Destination */}
                 <div>
-                  <label htmlFor="destination" className="font-semibold text-gray-700">
+                  <label
+                    htmlFor="destination"
+                    className="font-semibold text-gray-700"
+                  >
                     Destination
                   </label>
                   <GooglePlacesAutocomplete
@@ -134,9 +136,9 @@ export default function CreateTrip() {
                       value: place,
                       onChange: (v) => {
                         setPlace(v);
-                        update('location', v);
+                        update("location", v);
                       },
-                      className: 'mt-2 rounded-lg border-gray-300',
+                      className: "mt-2 rounded-lg border-gray-300",
                     }}
                   />
                 </div>
@@ -152,7 +154,7 @@ export default function CreateTrip() {
                     min={1}
                     placeholder="Ex. 5"
                     className="w-32 mt-2"
-                    onChange={(e) => update('noOfDays', e.target.value)}
+                    onChange={(e) => update("noOfDays", e.target.value)}
                   />
                 </div>
               </div>
@@ -167,11 +169,11 @@ export default function CreateTrip() {
                       <button
                         key={b.id}
                         type="button"
-                        onClick={() => update('budget', b.title)}
+                        onClick={() => update("budget", b.title)}
                         className={`rounded-xl p-4 flex flex-col items-center gap-1 transition-all ${
                           formData.budget === b.title
-                            ? 'bg-gray-800 text-white shadow-lg'
-                            : 'bg-gray-100 text-gray-800'
+                            ? "bg-gray-800 text-white shadow-lg"
+                            : "bg-gray-100 text-gray-800"
                         }`}
                       >
                         <span className="text-2xl">{b.icon}</span>
@@ -189,11 +191,11 @@ export default function CreateTrip() {
                       <button
                         key={t.id}
                         type="button"
-                        onClick={() => update('traveler', t.people)}
+                        onClick={() => update("traveler", t.people)}
                         className={`rounded-xl p-4 flex flex-col items-center gap-1 transition-all ${
                           formData.traveler === t.people
-                            ? 'bg-gray-800 text-white shadow-lg'
-                            : 'bg-gray-100 text-gray-800'
+                            ? "bg-gray-800 text-white shadow-lg"
+                            : "bg-gray-100 text-gray-800"
                         }`}
                       >
                         <span className="text-2xl">{t.icon}</span>
@@ -222,7 +224,7 @@ export default function CreateTrip() {
                     Création en cours
                   </>
                 ) : (
-                  'Générer'
+                  "Générer"
                 )}
               </Button>
             </div>
@@ -234,11 +236,12 @@ export default function CreateTrip() {
           <DialogOverlay />
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-center text-lg font-bold">
+              <DialogTitle className="flex flex-col items-center gap-3">
+                <img src="/logo.svg" alt="Logo" className="h-12" />
                 Connexion Google
               </DialogTitle>
               <DialogDescription className="text-center text-gray-600">
-                Connecte‑toi pour continuer.
+                Authentifiez‑vous pour commencer votre aventure.
               </DialogDescription>
             </DialogHeader>
 
@@ -249,13 +252,23 @@ export default function CreateTrip() {
                 checked={consentChecked}
                 onChange={(e) => {
                   setConsentChecked(e.target.checked);
-                  setConsentError('');
+                  setConsentError("");
                 }}
+                className="mt-1"
               />
               <label htmlFor="rgpd" className="text-sm text-gray-700">
-                J’accepte l’utilisation de mes données.
+                J’accepte l’utilisation de mes données par TripGenius.{" "}
+                <a
+                  href="/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline hover:text-blue-800"
+                >
+                  En savoir plus
+                </a>
               </label>
             </div>
+
             {consentError && (
               <p className="text-red-500 text-sm mt-2">{consentError}</p>
             )}
@@ -263,14 +276,14 @@ export default function CreateTrip() {
             <Button
               onClick={() => {
                 if (!consentChecked) {
-                  setConsentError('Merci d’accepter les conditions');
+                  setConsentError("Merci d’accepter les conditions");
                   return;
                 }
-                login();
+                login(); // 🟢 PAS TOUCHE : ça déclenche la génération IA après auth
               }}
-              className="w-full mt-6 flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white"
+              className="mt-6 flex w-full items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-500 text-white"
             >
-              <FcGoogle className="h-5 w-5" />
+              <FcGoogle className="h-6 w-6" />
               Continuer avec Google
             </Button>
 
@@ -278,7 +291,7 @@ export default function CreateTrip() {
               <button
                 type="button"
                 aria-label="Fermer"
-                className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-200"
+                className="absolute top-4 right-4 rounded-full bg-white p-2 shadow"
               >
                 <X className="h-4 w-4 text-gray-600" />
               </button>

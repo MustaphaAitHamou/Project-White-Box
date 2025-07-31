@@ -67,9 +67,9 @@ const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 // Jest n'accepte pas import.meta.env → on lit d'abord process.env (Jest),
 // puis éventuellement une variable globale injectée au runtime.
 const RECAPTCHA_KEY =
-   typeof window !== "undefined" && window.__ENV__?.VITE_RECAPTCHA_SITE_KEY
-     ? window.__ENV__.VITE_RECAPTCHA_SITE_KEY
-     : "";
+  typeof window !== "undefined" && window.__ENV__?.VITE_RECAPTCHA_SITE_KEY
+    ? window.__ENV__.VITE_RECAPTCHA_SITE_KEY
+    : "";
 const useRecaptcha = Boolean(RECAPTCHA_KEY) && !isIOS;
 
 /* ------------------------------------------------------------------ */
@@ -87,12 +87,12 @@ export default function Header() {
   });
 
   /* ---------- autres états ---------- */
-  const [showLogin, setShowLogin]   = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState("");
-  const [agree, setAgree]           = useState(false);
-  const [error, setError]           = useState("");
-  const [exporting, setExporting]   = useState(false);
+  const [agree, setAgree] = useState(false);
+  const [error, setError] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   const recaptchaRef = useRef(null);
 
@@ -120,16 +120,16 @@ export default function Header() {
   ---------------------------------------------------------------- */
   const login = useGoogleLogin({
     onSuccess: handleProfile,
-    onError  : () => toast.error("Échec de l’authentification Google"),
-    scope    : "openid email profile",
-    ux_mode  : isIOS ? "redirect" : "popup",
+    onError: () => toast.error("Échec de l’authentification Google"),
+    scope: "openid email profile",
+    ux_mode: isIOS ? "redirect" : "popup",
     redirect_uri: window.location.origin + "/",
   });
 
   async function handleProfile({ access_token }) {
     try {
       const { data } = await axios.get(
-        `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${access_token}`,
+        `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${access_token}`
       );
       localStorage.setItem("user", JSON.stringify(data));
       window.dispatchEvent(new Event("userChanged"));
@@ -180,11 +180,11 @@ export default function Header() {
     try {
       const q = query(
         collection(db, "AITrips"),
-        where("userEmail", "==", user.email),
+        where("userEmail", "==", user.email)
       );
       const snap = await getDocs(q);
       await Promise.all(
-        snap.docs.map((d) => deleteDoc(docRef(db, "AITrips", d.id))),
+        snap.docs.map((d) => deleteDoc(docRef(db, "AITrips", d.id)))
       );
       await deleteDoc(docRef(db, "consents", user.id));
       logout();
@@ -204,7 +204,7 @@ export default function Header() {
       // Récupère tous les voyages de l’utilisateur
       const q = query(
         collection(db, "AITrips"),
-        where("userEmail", "==", user.email),
+        where("userEmail", "==", user.email)
       );
       const snap = await getDocs(q);
       const trips = snap.docs.map((d) => d.data());
@@ -255,7 +255,10 @@ export default function Header() {
                   className="h-10 w-10 cursor-pointer rounded-full ring-2 ring-indigo-400"
                 />
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-56 rounded-lg p-2 shadow-lg bg-white">
+              <PopoverContent
+                align="end"
+                className="w-56 rounded-lg p-2 shadow-lg bg-white"
+              >
                 <Button
                   onClick={logout}
                   variant="ghost"
@@ -328,7 +331,15 @@ export default function Header() {
               className="mt-1"
             />
             <label htmlFor="rgpd" className="text-sm text-gray-700">
-              J’accepte l’utilisation de mes données par TripGenius.
+              J’accepte l’utilisation de mes données par TripGenius.{" "}
+              <a
+                href="/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 underline hover:text-blue-800"
+              >
+                En savoir plus
+              </a>
             </label>
           </div>
           {error && <p className="mt-2 text-sm text-red-500">{error}</p>}

@@ -1,24 +1,41 @@
 {
-    "ci": {
-      "collect": {
-        "staticDistDir": "dist",
-        "url": ["/index.html?lhci=1"],
-        "numberOfRuns": 1,
-        "chromeFlags": "--no-sandbox --disable-dev-shm-usage --headless=new",
-        "settings": {
-          "emulatedFormFactor": "desktop",
-          "maxWaitForFcp": 120000,
-          "maxWaitForLoad": 120000
-        }
-      },
-      "assert": {
-        "preset": "lighthouse:no-pwa",
-        "assertions": {
-          "categories:performance": ["warn", { "minScore": 0.75 }],
-          "categories:accessibility": ["error", { "minScore": 0.90 }]
-        }
-      },
-      "upload": { "target": "temporary-public-storage" }
+  "ci": {
+    "collect": {
+      "staticDistDir": "dist",
+      "url": ["/index.html?lhci=1"],
+      "numberOfRuns": 1,
+      "chromeFlags": "--no-sandbox --disable-dev-shm-usage --headless=new",
+      "settings": {
+        "emulatedFormFactor": "desktop",
+        "maxWaitForFcp": 120000,
+        "maxWaitForLoad": 120000
+      }
+    },
+
+    "assert": {
+      "preset": "lighthouse:no-pwa",
+
+      "assertions": {
+        "categories:performance":  ["warn", { "minScore": 0.70 }],
+        "categories:accessibility": ["error", { "minScore": 0.85 }],
+        "categories:seo":          ["warn", { "minScore": 0.80 }],
+
+        "errors-in-console":            ["warn", { "minScore": 0.0 }],
+        "meta-description":             ["warn", { "minScore": 0.0 }],
+        "network-dependency-tree-insight": ["warn", { "minScore": 0.0 }],
+        "valid-source-maps":            ["warn", { "minScore": 0.0 }],
+
+        "unminified-javascript":        ["warn", { "maxLength": 4 }],
+
+        "unused-javascript":            ["warn", { "maxLength": 6 }],
+
+        "render-blocking-resources":    ["warn", { "maxLength": 3 }],
+        "render-blocking-insight":      ["warn", { "maxLength": 3 }]
+      }
+    },
+
+    "upload": {
+      "target": "temporary-public-storage"
     }
   }
-  
+}

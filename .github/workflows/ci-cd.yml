@@ -1,4 +1,4 @@
-name: CI‑CD Pipeline
+name: CI-CD Pipeline
 
 on:
   push:
@@ -11,10 +11,10 @@ env:
   BUILD_DIR: "dist"
   LC_ALL: "C.UTF-8"
 
+# ─────────────────────────────────────────────────────────────
+# 1️⃣  Build + static checks
+# ─────────────────────────────────────────────────────────────
 jobs:
-# ─────────────────────────────────────────────────────────────
-# 1️⃣  Build + static checks (ESLint, TypeScript)
-# ─────────────────────────────────────────────────────────────
   build:
     runs-on: ubuntu-latest
     steps:
@@ -28,11 +28,11 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Lint & type‑check
-        run: npm run lint   # -> eslint + tsc --noEmit
+      - name: Lint & type-check
+        run: npm run lint         # eslint + tsc --noEmit
 
       - name: Build (Vite)
-        run: npm run build
+        run: npm run build        # produit ./dist
 
       - name: Upload build artefact
         uses: actions/upload-artifact@v4
@@ -41,7 +41,7 @@ jobs:
           path: ${{ env.BUILD_DIR }}
 
 # ─────────────────────────────────────────────────────────────
-# 2️⃣  Tests unitaires + couverture  (Vitest + Codecov)
+# 2️⃣  Tests unitaires + couverture
 # ─────────────────────────────────────────────────────────────
   test:
     needs: build
@@ -85,7 +85,7 @@ jobs:
           path: image.tar.gz
 
 # ─────────────────────────────────────────────────────────────
-# 4️⃣  Déploiement automatique sur Vercel en préprod
+# 4️⃣  Déploiement Vercel (preview)
 # ─────────────────────────────────────────────────────────────
   deploy-preprod:
     needs: package
@@ -101,3 +101,39 @@ jobs:
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+# ─────────────────────────────────────────────────────────────
+# 5️⃣  Audit Lighthouse CI + check GitHub
+# ─────────────────────────────────────────────────────────────
+  lighthouse:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # récupère le build statique
+      - name: Download build artefact
+        uses: actions/download-artifact@v4
+        with:
+          name: site-build
+          path: ${{ env.BUILD_DIR }}
+
+      - name: Install LHCI
+        run: npm install -g @lhci/cli
+
+      - name: Run Lighthouse CI
+        run: lhci autorun --config=.lighthouserc.json
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Upload LHCI report
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: .lighthouseci/**/*

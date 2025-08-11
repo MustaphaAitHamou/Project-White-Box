@@ -97,10 +97,8 @@
 <a name='L32'></a><a href='#L32'>32</a>
 <a name='L33'></a><a href='#L33'>33</a>
 <a name='L34'></a><a href='#L34'>34</a>
-<a name='L35'></a><a href='#L35'>35</a>
-<a name='L36'></a><a href='#L36'>36</a>
-<a name='L37'></a><a href='#L37'>37</a>
-<a name='L38'></a><a href='#L38'>38</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L35'></a><a href='#L35'>35</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -133,44 +131,37 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React from 'react'; // juste pour ESLint
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React from 'react';
+import Footer from '~/view-trip/components/Footer';
 &nbsp;
 export default function PrivacyPolicy() {
   return (
-    &lt;div className="min-h-screen bg-gradient-to-r from-purple-600 to-blue-500 flex items-center justify-center px-4 py-16"&gt;
-      &lt;div className="bg-white bg-opacity-90 backdrop-blur-md p-10 rounded-2xl shadow-2xl max-w-4xl w-full"&gt;
-        &lt;h1 className="text-3xl font-bold text-gray-800 mb-8"&gt;Politique de confidentialité&lt;/h1&gt;
-        &lt;p className="text-gray-700 mb-6"&gt;
-          Chez &lt;strong&gt;TripGenius&lt;/strong&gt;, nous accordons une grande importance à la protection de vos données personnelles. Cette page explique comment nous collectons, utilisons et protégeons vos informations.
-        &lt;/p&gt;
+    &lt;div className="min-h-screen flex flex-col bg-slate-900 text-white"&gt;
+      &lt;main className="flex-grow flex items-center justify-center px-4 py-16"&gt;
+        &lt;div className="bg-slate-800 bg-opacity-90 backdrop-blur-md p-10 rounded-2xl shadow-2xl max-w-4xl w-full"&gt;
+          &lt;h1 className="text-3xl font-bold text-violet-400 mb-8"&gt;Politique de confidentialité&lt;/h1&gt;
+          &lt;p className="mb-6"&gt;
+            Chez &lt;strong&gt;TripGenius&lt;/strong&gt;, nous accordons une grande importance à la protection de vos données personnelles.
+          &lt;/p&gt;
 &nbsp;
-        &lt;h2 className="text-xl font-semibold text-gray-800 mt-8 mb-2"&gt;1. Données collectées&lt;/h2&gt;
-        &lt;ul className="list-disc list-inside text-gray-700 space-y-1"&gt;
-          &lt;li&gt;Informations issues de la connexion via Google (nom, email, image de profil)&lt;/li&gt;
-          &lt;li&gt;Préférences de voyage saisies par l’utilisateur&lt;/li&gt;
-          &lt;li&gt;Données techniques (cookies, journaux d’erreurs, etc.)&lt;/li&gt;
-        &lt;/ul&gt;
+          &lt;h2 className="text-xl font-semibold text-white mt-8 mb-2"&gt;1. Données collectées&lt;/h2&gt;
+          &lt;ul className="list-disc list-inside space-y-1"&gt;
+            &lt;li&gt;Connexion Google (nom, email, photo)&lt;/li&gt;
+            &lt;li&gt;Préférences de voyage saisies&lt;/li&gt;
+            &lt;li&gt;Données techniques (cookies, logs)&lt;/li&gt;
+          &lt;/ul&gt;
 &nbsp;
-        &lt;h2 className="text-xl font-semibold text-gray-800 mt-8 mb-2"&gt;2. Utilisation des données&lt;/h2&gt;
-        &lt;p className="text-gray-700"&gt;
-          Ces données sont utilisées uniquement pour personnaliser votre expérience, générer des itinéraires et assurer le bon fonctionnement du service.
-        &lt;/p&gt;
+          &lt;h2 className="text-xl font-semibold text-white mt-8 mb-2"&gt;2. Utilisation&lt;/h2&gt;
+          &lt;p&gt;Pour personnaliser l’expérience utilisateur, générer les itinéraires et faire fonctionner le service.&lt;/p&gt;
 &nbsp;
-        &lt;h2 className="text-xl font-semibold text-gray-800 mt-8 mb-2"&gt;3. Sécurité et conservation&lt;/h2&gt;
-        &lt;p className="text-gray-700"&gt;
-          Vos données sont stockées de manière sécurisée sur Firebase. Nous ne partageons jamais vos informations avec des tiers sans votre consentement.
-        &lt;/p&gt;
+          &lt;h2 className="text-xl font-semibold text-white mt-8 mb-2"&gt;3. Sécurité&lt;/h2&gt;
+          &lt;p&gt;Les données sont stockées sur Firebase. Aucune transmission à des tiers sans votre consentement.&lt;/p&gt;
 &nbsp;
-        &lt;h2 className="text-xl font-semibold text-gray-800 mt-8 mb-2"&gt;4. Vos droits&lt;/h2&gt;
-        &lt;p className="text-gray-700"&gt;
-          Conformément au RGPD, vous pouvez à tout moment demander l’accès, la modification ou la suppression de vos données personnelles.
-        &lt;/p&gt;
-&nbsp;
-      &lt;/div&gt;
+          &lt;h2 className="text-xl font-semibold text-white mt-8 mb-2"&gt;4. Vos droits&lt;/h2&gt;
+          &lt;p&gt;Conformément au RGPD, vous pouvez demander l’accès, la modification ou la suppression de vos données.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/main&gt;
+      &lt;Footer /&gt;
     &lt;/div&gt;
   );
 }
@@ -181,7 +172,7 @@ export default function PrivacyPolicy() {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-26T12:13:47.007Z
+                at 2025-08-10T17:57:22.857Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

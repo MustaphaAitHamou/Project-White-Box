@@ -123,7 +123,10 @@
 <a name='L58'></a><a href='#L58'>58</a>
 <a name='L59'></a><a href='#L59'>59</a>
 <a name='L60'></a><a href='#L60'>60</a>
-<a name='L61'></a><a href='#L61'>61</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -183,66 +186,69 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React from 'react';
+import Footer from '~/view-trip/components/Footer';
 &nbsp;
-function LegalMentions() {
+export default function LegalMentions() {
   return (
-    &lt;div className="min-h-screen bg-gray-50 text-gray-800 px-6 py-12"&gt;
-      &lt;div className="max-w-4xl mx-auto bg-white p-8 rounded shadow-lg"&gt;
-        &lt;h1 className="text-3xl font-bold mb-6 text-indigo-700"&gt;Mentions légales&lt;/h1&gt;
+    &lt;div className="min-h-screen flex flex-col bg-slate-900 text-white"&gt;
+      &lt;main className="flex-grow flex items-center justify-center px-4 py-16"&gt;
+        &lt;div className="bg-slate-800 bg-opacity-90 backdrop-blur-md p-10 rounded-2xl shadow-2xl max-w-4xl w-full"&gt;
+          &lt;h1 className="text-3xl font-bold text-violet-400 mb-8"&gt;Mentions légales&lt;/h1&gt;
 &nbsp;
-        &lt;section className="mb-6"&gt;
-          &lt;h2 className="text-xl font-semibold mb-2"&gt;Éditeur du site&lt;/h2&gt;
-          &lt;p&gt;
-            TripGenius est édité par &lt;strong&gt;Negan Yaghmoracen Aït-Yidir&lt;/strong&gt;, fondateur de la société TAMURT SERVICES LLC.
-          &lt;/p&gt;
-        &lt;/section&gt;
+          &lt;section className="mb-6"&gt;
+            &lt;h2 className="text-xl font-semibold text-white mb-2"&gt;Éditeur du site&lt;/h2&gt;
+            &lt;p&gt;
+              TripGenius est édité par &lt;strong&gt;Negan Yaghmoracen Aït-Yidir&lt;/strong&gt;, fondateur de la société TAMURT SERVICES LLC.
+            &lt;/p&gt;
+          &lt;/section&gt;
 &nbsp;
-        &lt;section className="mb-6"&gt;
-          &lt;h2 className="text-xl font-semibold mb-2"&gt;Hébergement&lt;/h2&gt;
-          &lt;p&gt;
-            Le site est hébergé par &lt;strong&gt;IGLAO HOSTING&lt;/strong&gt;&lt;br /&gt;
-            Adresse : F85 QUARTIER LE PONT, 07580 SAINT-PONS, FRANCE&lt;br /&gt;
-            Site web : &lt;a href="https://iglao.com" className="text-blue-600 underline"&gt;https://iglao.com&lt;/a&gt;
-          &lt;/p&gt;
-        &lt;/section&gt;
+          &lt;section className="mb-6"&gt;
+            &lt;h2 className="text-xl font-semibold text-white mb-2"&gt;Hébergement&lt;/h2&gt;
+            &lt;p&gt;
+              Le site est hébergé par &lt;strong&gt;IGLAO HOSTING&lt;/strong&gt;&lt;br /&gt;
+              Adresse : F85 QUARTIER LE PONT, 07580 SAINT-PONS, FRANCE&lt;br /&gt;
+              Site web : &lt;a href="https://iglao.com" className="text-violet-400 underline"&gt;https://iglao.com&lt;/a&gt;
+            &lt;/p&gt;
+          &lt;/section&gt;
 &nbsp;
-        &lt;section className="mb-6"&gt;
-          &lt;h2 className="text-xl font-semibold mb-2"&gt;Responsabilité&lt;/h2&gt;
-          &lt;p&gt;
-            L’éditeur ne peut être tenu responsable des dommages directs ou indirects causés au matériel de l’utilisateur lors de l’accès au site.
-            L’utilisateur du site s’engage à accéder au site en utilisant un matériel récent, ne contenant pas de virus, et avec un navigateur mis à jour.
-          &lt;/p&gt;
-        &lt;/section&gt;
+          &lt;section className="mb-6"&gt;
+            &lt;h2 className="text-xl font-semibold text-white mb-2"&gt;Responsabilité&lt;/h2&gt;
+            &lt;p&gt;
+              L’éditeur ne peut être tenu responsable des dommages directs ou indirects causés au matériel de l’utilisateur lors de l’accès au site.
+              L’utilisateur du site s’engage à accéder au site en utilisant un matériel récent, ne contenant pas de virus, et avec un navigateur mis à jour.
+            &lt;/p&gt;
+          &lt;/section&gt;
 &nbsp;
-        &lt;section className="mb-6"&gt;
-          &lt;h2 className="text-xl font-semibold mb-2"&gt;Propriété intellectuelle&lt;/h2&gt;
-          &lt;p&gt;
-            Tous les contenus présents sur le site TripGenius (textes, images, logos, vidéos, etc.) sont la propriété exclusive de l’éditeur, sauf mention contraire.
-            Toute reproduction, distribution ou modification sans autorisation écrite est interdite.
-          &lt;/p&gt;
-        &lt;/section&gt;
+          &lt;section className="mb-6"&gt;
+            &lt;h2 className="text-xl font-semibold text-white mb-2"&gt;Propriété intellectuelle&lt;/h2&gt;
+            &lt;p&gt;
+              Tous les contenus présents sur le site TripGenius (textes, images, logos, vidéos, etc.) sont la propriété exclusive de l’éditeur, sauf mention contraire.
+              Toute reproduction, distribution ou modification sans autorisation écrite est interdite.
+            &lt;/p&gt;
+          &lt;/section&gt;
 &nbsp;
-        &lt;section className="mb-6"&gt;
-          &lt;h2 className="text-xl font-semibold mb-2"&gt;Données personnelles&lt;/h2&gt;
-          &lt;p&gt;
-            Les informations collectées lors de l’utilisation du site sont traitées dans le respect de la réglementation en vigueur. Pour plus d’informations,
-            consultez notre &lt;a href="/privacy-policy" className="text-blue-600 underline"&gt;politique de confidentialité&lt;/a&gt;.
-          &lt;/p&gt;
-        &lt;/section&gt;
+          &lt;section className="mb-6"&gt;
+            &lt;h2 className="text-xl font-semibold text-white mb-2"&gt;Données personnelles&lt;/h2&gt;
+            &lt;p&gt;
+              Les informations collectées sont traitées dans le respect de la réglementation en vigueur.
+              Consultez notre &lt;a href="/privacy-policy" className="text-violet-400 underline"&gt;politique de confidentialité&lt;/a&gt;.
+            &lt;/p&gt;
+          &lt;/section&gt;
 &nbsp;
-        &lt;section className="mb-6"&gt;
-          &lt;h2 className="text-xl font-semibold mb-2"&gt;Contact&lt;/h2&gt;
-          &lt;p&gt;
-            Pour toute question, vous pouvez nous contacter à l’adresse suivante : &lt;a href="mailto:contact@tripgenius.ai" className="text-blue-600 underline"&gt;contact@tripgenius.ai&lt;/a&gt;
-          &lt;/p&gt;
-        &lt;/section&gt;
-      &lt;/div&gt;
+          &lt;section&gt;
+            &lt;h2 className="text-xl font-semibold text-white mb-2"&gt;Contact&lt;/h2&gt;
+            &lt;p&gt;
+              Pour toute question : &lt;a href="mailto:contact@tripgenius.ai" className="text-violet-400 underline"&gt;contact@tripgenius.ai&lt;/a&gt;
+            &lt;/p&gt;
+          &lt;/section&gt;
+        &lt;/div&gt;
+      &lt;/main&gt;
+      &lt;Footer /&gt;
     &lt;/div&gt;
   );
 }
-&nbsp;
-export default LegalMentions;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -250,7 +256,7 @@ export default LegalMentions;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-26T12:13:47.007Z
+                at 2025-08-10T17:57:22.857Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

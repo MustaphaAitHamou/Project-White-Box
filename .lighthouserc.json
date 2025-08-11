@@ -1,28 +1,16 @@
 {
-  "$schema": "https://json.schemastore.org/lighthouserc",
   "ci": {
-    "port": 9222,
-    "chromePath": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-
     "collect": {
       "staticDistDir": "dist",
-      "url": ["/index.html?lhci=1"],
-
-      "settings": {
-        "chromeFlags": "--headless --disable-gpu --no-sandbox --remote-debugging-port=9222"
-      },
-
-      "numberOfRuns": 1,
-      "maxWaitForFcp": 120000,
-      "maxWaitForLoad": 120000
+      "numberOfRuns": 1
     },
-
     "assert": {
-      "preset": "lighthouse:no-pwa"
+      "preset": "lighthouse:no-pwa",
+      "assertions": {
+        "categories:performance": ["warn", { "minScore": 0.7 }],
+        "categories:accessibility": ["error", { "minScore": 0.9 }]
+      }
     },
-
-    "upload": {
-      "target": "temporary-public-storage"
-    }
+    "upload": { "target": "filesystem", "outputDir": ".lighthouseci" }
   }
 }

@@ -12,6 +12,9 @@ env:
   LC_ALL: "C.UTF-8"
 
 jobs:
+  # ─────────────────────────────────────────────────────────────
+  # 1) Build + lint
+  # ─────────────────────────────────────────────────────────────
   build:
     runs-on: ubuntu-latest
     steps:
@@ -25,7 +28,7 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      # ✅ Clés factices pour que le bundle ne crash pas en prod/LHCI
+      # Clés factices pour que le bundle/LHCI ne crash pas
       - name: Create .env.local for build
         run: |
           cat > .env.local << 'EOF'
@@ -47,6 +50,9 @@ jobs:
           name: site-build
           path: ${{ env.BUILD_DIR }}
 
+  # ─────────────────────────────────────────────────────────────
+  # 2) Tests + couverture Codecov
+  # ─────────────────────────────────────────────────────────────
   test:
     needs: build
     runs-on: ubuntu-latest
@@ -58,22 +64,22 @@ jobs:
           cache: npm
       - run: npm ci
 
-      # Si tu utilises Jest, garde cette ligne.
       - name: Run tests
         run: npm run test -- --coverage
         env:
           NODE_OPTIONS: "--experimental-vm-modules"
 
-      # Si tu es sur Vitest, adapte le chemin et la commande ci-dessus.
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          # Jest: coverage-final.json | Vitest: vitest-final.json
           files: ./coverage/coverage-final.json
           flags: unittests
           fail_ci_if_error: true
 
+  # ─────────────────────────────────────────────────────────────
+  # 3) Packaging Docker (optionnel)
+  # ─────────────────────────────────────────────────────────────
   package:
     needs: test
     runs-on: ubuntu-latest
@@ -88,6 +94,9 @@ jobs:
           name: docker-image
           path: image.tar.gz
 
+  # ─────────────────────────────────────────────────────────────
+  # 4) Déploiement Vercel (preview)
+  # ─────────────────────────────────────────────────────────────
   deploy-preprod:
     needs: package
     runs-on: ubuntu-latest
@@ -102,20 +111,24 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
+  # ─────────────────────────────────────────────────────────────
+  # 5) Lighthouse CI sur le build statique
+  # ─────────────────────────────────────────────────────────────
   lighthouse:
     needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
-      # Récupère le build produit plus haut
       - name: Download build artefact
         uses: actions/download-artifact@v4
         with:
           name: site-build
           path: ${{ env.BUILD_DIR }}
 
-      # LHCI via npx (pas besoin d’installer les devDeps)
       - name: Run Lighthouse CI
         run: npx -y @lhci/cli@latest autorun --config=.lighthouserc.json --verbose
         env:
@@ -125,4 +138,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-report
-          path: .lighthouseci/**/*
+          path: .lighthouseci
+          if-no-files-found: warn
+          retention-days: 7

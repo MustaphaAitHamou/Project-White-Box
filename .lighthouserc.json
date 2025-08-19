@@ -2,7 +2,7 @@
   "ci": {
     "collect": {
       "startServerCommand": "npx -y serve -s dist -l 4173",
-      "startServerReadyPattern": "(Local|127\\.0\\.0\\.1|localhost):\\s*http://(?:127\\.0\\.0\\.1|localhost):4173/?",
+      "startServerReadyPattern": "(?:127\\.0\\.0\\.1|localhost):\\s*4173",
       "startServerReadyTimeout": 120000,
       "url": [
         "http://localhost:4173/",

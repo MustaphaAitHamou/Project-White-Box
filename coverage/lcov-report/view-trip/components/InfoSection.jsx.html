@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.1% </span>
+                <span class="strong">60.93% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>39/59</span>
+                <span class='fraction'>39/64</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.66% </span>
+                <span class="strong">61.53% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>8/12</span>
+                <span class='fraction'>8/13</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.07% </span>
+                <span class="strong">60.65% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>37/56</span>
+                <span class='fraction'>37/61</span>
             </div>
         
             
@@ -228,7 +228,14 @@
 <a name='L163'></a><a href='#L163'>163</a>
 <a name='L164'></a><a href='#L164'>164</a>
 <a name='L165'></a><a href='#L165'>165</a>
-<a name='L166'></a><a href='#L166'>166</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -269,6 +276,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -280,7 +290,7 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -296,16 +306,20 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -435,6 +449,9 @@ function <span class="fstat-no" title="function not covered" >urlFromPhotoName(<
 <span class="cstat-no" title="statement not covered" >  return { v1Url, legacyUrl };</span>
 }
 &nbsp;
+// no-op qui "utilise" le paramètre pour satisfaire ESLint
+function <span class="fstat-no" title="function not covered" >swallow(</span>e) { <span class="cstat-no" title="statement not covered" >void e; </span>}
+&nbsp;
 async function resolvePhoto({ placeId, label }) {
   // 1) Si on a un placeId -&gt; wrapper direct
   if (placeId) {
@@ -444,8 +461,8 @@ async function resolvePhoto({ placeId, label }) {
         await preload(u);
         return u;
       }
-    } catch {
-      /* silent */
+    } catch (e) {
+<span class="cstat-no" title="statement not covered" >      swallow(e);</span>
     }
   }
 &nbsp;
@@ -460,17 +477,21 @@ async function resolvePhoto({ placeId, label }) {
 <span class="cstat-no" title="statement not covered" >          try {</span>
 <span class="cstat-no" title="statement not covered" >            await preload(v1Url);</span>
 <span class="cstat-no" title="statement not covered" >            return v1Url;</span>
-          } catch {}
+          } catch (e) {
+<span class="cstat-no" title="statement not covered" >            swallow(e);</span>
+          }
         }
 <span class="cstat-no" title="statement not covered" >        if (legacyUrl) {</span>
 <span class="cstat-no" title="statement not covered" >          try {</span>
 <span class="cstat-no" title="statement not covered" >            await preload(legacyUrl);</span>
 <span class="cstat-no" title="statement not covered" >            return legacyUrl;</span>
-          } catch {}
+          } catch (e) {
+<span class="cstat-no" title="statement not covered" >            swallow(e);</span>
+          }
         }
       }
-    } catch {
-      /* silent */
+    } catch (e) {
+<span class="cstat-no" title="statement not covered" >      swallow(e);</span>
     }
   }
 &nbsp;
@@ -565,7 +586,7 @@ InfoSection.propTypes = {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-18T12:47:05.026Z
+                at 2025-08-19T01:20:06.466Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

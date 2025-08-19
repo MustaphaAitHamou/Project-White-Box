@@ -1,8 +1,12 @@
 {
   "ci": {
     "collect": {
-      "staticDistDir": "dist",
-      "url": ["/", "/create-trip"],
+      "startServerCommand": "npx -y http-server dist -p 4173 -s --cors",
+      "startServerReadyPattern": "(?:127\\.0\\.0\\.1|localhost):4173",
+      "url": [
+        "http://localhost:4173/",
+        "http://localhost:4173/create-trip"
+      ],
       "numberOfRuns": 2,
       "settings": {
         "formFactor": "desktop",

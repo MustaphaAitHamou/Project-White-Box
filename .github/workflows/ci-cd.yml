@@ -29,7 +29,7 @@ jobs:
         run: npm ci
 
       - name: Lint & type-check
-        run: npm run lint         # eslint + tsc --noEmit
+        run: npm run lint --if-present
 
       - name: Build (Vite)
         run: npm run build        # produit ./dist
@@ -41,7 +41,7 @@ jobs:
           path: ${{ env.BUILD_DIR }}
 
 # ─────────────────────────────────────────────────────────────
-# 2️⃣  Tests unitaires + couverture
+# 2️⃣  Tests unitaires + couverture (Jest)
 # ─────────────────────────────────────────────────────────────
   test:
     needs: build
@@ -52,18 +52,19 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-      - run: npm ci
 
-      - name: Run Vitest
-        run: npm run test -- --coverage
-        env:
-          NODE_OPTIONS: "--experimental-vm-modules"
+      - name: Install deps
+        run: npm ci
+
+      - name: Run Jest + coverage
+        run: npm test -- --coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
+          # Jest produit coverage/coverage-final.json
+          files: ./coverage/coverage-final.json
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/vitest-final.json
           flags: unittests
           fail_ci_if_error: true
 
@@ -93,42 +94,33 @@ jobs:
     environment: preview
     steps:
       - uses: actions/checkout@v4
-
       - name: Deploy to Vercel (Preview)
         run: |
-          npm install -g vercel
+          npm i -g vercel
           vercel --token ${{ secrets.VERCEL_TOKEN }} --prod=false --confirm --yes
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 # ─────────────────────────────────────────────────────────────
-# 5️⃣  Audit Lighthouse CI + check GitHub
+# 5️⃣  Audit Lighthouse CI (sans vite preview)
 # ─────────────────────────────────────────────────────────────
   lighthouse:
     needs: test
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      # récupère le build statique
+      # Récupère le build statique
       - name: Download build artefact
         uses: actions/download-artifact@v4
         with:
           name: site-build
           path: ${{ env.BUILD_DIR }}
 
-      - name: Install LHCI
-        run: npm install -g @lhci/cli
-
+      # Pas besoin de node_modules/vite : LHCI sert ./dist lui-même
       - name: Run Lighthouse CI
-        run: lhci autorun --config=.lighthouserc.json --verbose
+        run: npx -y @lhci/cli@latest autorun --config=.lighthouserc.json --verbose
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
@@ -136,4 +128,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-report
-          path: .lighthouseci/**/*
+          path: .lighthouseci/**

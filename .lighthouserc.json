@@ -1,9 +1,8 @@
 {
   "ci": {
     "collect": {
-      "startServerCommand": "npm run preview -- --strictPort --port 4173",
-      "startServerReadyPattern": "(Local|127\\.0\\.0\\.1|localhost):\\s*http:\\/\\/(?:127\\.0\\.0\\.1|localhost):4173\\/",
-      "url": ["http://localhost:4173/", "http://localhost:4173/create-trip"],
+      "staticDistDir": "dist",
+      "url": ["/", "/create-trip"],
       "numberOfRuns": 2,
       "settings": {
         "formFactor": "desktop",
@@ -40,11 +39,9 @@
         "robots-txt": "off",
         "valid-source-maps": "off",
         "network-dependency-tree-insight": "off",
-
         "unminified-javascript": "off",
         "unsized-images": "off",
         "unused-javascript": "off",
-
         "legacy-javascript": ["warn", { "maxLength": 5 }],
         "render-blocking-insight": ["warn", { "maxLength": 5 }],
         "cache-insight": ["warn", { "maxLength": 5 }]

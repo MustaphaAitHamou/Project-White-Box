@@ -54,16 +54,16 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Run Jest (coverage)
+      - name: Run Vitest
         run: npm run test -- --coverage
         env:
-          CI: "true"
+          NODE_OPTIONS: "--experimental-vm-modules"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/coverage-final.json   # ✅ fichier Jest
+          files: ./coverage/vitest-final.json
           flags: unittests
           fail_ci_if_error: true
 
@@ -105,47 +105,7 @@ jobs:
 # ─────────────────────────────────────────────────────────────
 # 5️⃣  Audit Lighthouse CI + check GitHub
 # ─────────────────────────────────────────────────────────────
-lighthouse:
-  needs: test
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: npm
-
-    - name: Download build artefact
-      uses: actions/download-artifact@v4
-      with:
-        name: site-build
-        path: ${{ env.BUILD_DIR }}
-
-    - name: Verify build exists
-      run: |
-        echo "PWD=$(pwd)"
-        ls -la
-        echo "Contents of $BUILD_DIR:"
-        ls -la "$BUILD_DIR"
-
-    # Chrome pour LHCI
-    - uses: browser-actions/setup-chrome@v1
-
-    - name: Install LHCI + static server
-      run: npm i -g @lhci/cli@0.14.x http-server
-
-    # Séparer collect & assert => logs plus clairs
-    - name: LHCI collect
-      run: lhci collect --config=.lighthouserc.json --verbose
-
-    - name: LHCI assert
-      run: lhci assert --config=.lighthouserc.json --verbose
-
-    - name: Upload LHCI report
-      uses: actions/upload-artifact@v4
-      with:
-        name: lighthouse-report
-        path: .lighthouseci/**/*
+  lighthouse:
     needs: test
     runs-on: ubuntu-latest
 

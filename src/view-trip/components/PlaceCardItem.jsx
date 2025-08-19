@@ -5,9 +5,11 @@ import { FaMapLocationDot } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import { Button } from '~/components/ui/button';
 import { GetPlaceDetails } from '~/service/GlobalApi';
+import { getEnv } from '~/lib/meta-env';
 
-const API_KEY = import.meta.env.VITE_GOOGLE_PLACE_API_KEY || 'test-key';
+
 const FALLBACK = '/placeholder.png';
+const API_KEY = getEnv('VITE_GOOGLE_PLACE_API_KEY', 'test-key');
 
 const buildPhotoURL = (name) =>
   `https://places.googleapis.com/v1/${name}/media?maxHeightPx=900&maxWidthPx=900&key=${API_KEY}`;

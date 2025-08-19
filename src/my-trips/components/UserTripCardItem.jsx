@@ -1,39 +1,42 @@
-import React, { useEffect, useState } from "react"
-import { GetPlaceDetails } from "~/service/GlobalApi"
-import { Link } from "react-router-dom"
-import PropTypes from 'prop-types';
+/* eslint-env browser */
+import React, { useEffect, useState } from "react";
+import { GetPlaceDetails } from "~/service/GlobalApi";
+import { Link } from "react-router-dom";
+import PropTypes from "prop-types";
+import { getEnv } from "~/lib/meta-env";
+
 UserTripCardItem.propTypes = {
-  trip : PropTypes.object.isRequired,
+  trip: PropTypes.object.isRequired,
 };
 
-
+const API_KEY = getEnv("VITE_GOOGLE_PLACE_API_KEY", "test-key");
 const PHOTO_REF_URL =
   "https://places.googleapis.com/v1/{NAME}/media" +
-  "?maxHeightPx=1000&maxWidthPx=1000&key=" +
-  import.meta.env.VITE_GOOGLE_PLACE_API_KEY
+  `?maxHeightPx=1000&maxWidthPx=1000&key=${API_KEY}`;
 
 export default function UserTripCardItem({ trip }) {
-  const [photoUrl, setPhotoUrl] = useState("/placeholder.png")
+  const [photoUrl, setPhotoUrl] = useState("/placeholder.png");
 
   useEffect(() => {
-    const label = trip?.userSelection?.location?.label?.trim()
-    if (label) fetchPhoto(label)
-  }, [trip])
+    const label = trip?.userSelection?.location?.label?.trim();
+    if (label) fetchPhoto(label);
+     
+  }, [trip]);
 
   async function fetchPhoto(query) {
     try {
-      const resp   = await GetPlaceDetails({ textQuery: query })
-      const photos = resp.data.places?.[0]?.photos
-      if (!photos?.length) return
-      const url = PHOTO_REF_URL.replace("{NAME}", photos[0].name)
-      setPhotoUrl(url)
+      const resp = await GetPlaceDetails({ textQuery: query });
+      const photos = resp.data.places?.[0]?.photos;
+      if (!photos?.length) return;
+      const url = PHOTO_REF_URL.replace("{NAME}", photos[0].name);
+      setPhotoUrl(url);
     } catch (err) {
-      console.error("Photo error:", err)
+      console.error("Photo error:", err);
     }
   }
 
-  const { label }               = trip?.userSelection?.location || {}
-  const { noOfDays, budget }    = trip?.userSelection || {}
+  const { label } = trip?.userSelection?.location || {};
+  const { noOfDays, budget } = trip?.userSelection || {};
 
   return (
     <Link to={`/view-trip/${trip?.id}`}>
@@ -52,5 +55,5 @@ export default function UserTripCardItem({ trip }) {
         </div>
       </article>
     </Link>
-  )
+  );
 }

@@ -1,41 +1,42 @@
-# RECETTE.md
+# Cahier de recettes
 
-## Objectif
-Vérifier que les principales fonctionnalités de l’application fonctionnent comme prévu.
+## Scénario 1 — Création d’un voyage
+- **Préco** : utilisateur connecté (consentement RGPD).
+- **Étapes** : destination “Paris”, 3 jours, budget Modéré, “À deux” → Générer.
+- **Attendu** : redirection `/view-trip/:id`, affichage InfoSection + Hôtels + 4 activités/jour ordonnées.
+- **Résultat** : ✅
 
----
+## Scénario 2 — Formulaire incomplet
+- **Étapes** : cliquer “Générer” sans rien remplir.
+- **Attendu** : toast d’erreur “Veuillez remplir tous les champs”.
+- **Résultat** : ✅
 
-### 🔹 Scénario 1 – Création d’un voyage
+## Scénario 3 — Connexion Google
+- **Étapes** : “Se connecter” → consentement → OAuth.
+- **Attendu** : avatar visible, menu utilisateur, accès “Mes voyages”.
+- **Résultat** : ✅
 
-- **URL** : `/create-trip`
-- **Préconditions** : Utilisateur connecté
-- **Étapes** :
-  1. Entrer destination = "Athènes"
-  2. Sélectionner budget = "Modéré"
-  3. Cliquer "Générer"
-- **Résultat attendu** : redirection vers `/view-trip/:id` avec itinéraire
-- **Statut** : ✅ OK le 25/07/2025
+## Scénario 4 — MyTrips (liste)
+- **Étapes** : connecté → `/my-trips`.
+- **Attendu** : cartes des voyages ; si aucun : message d’état.
+- **Résultat** : ✅
 
----
+## Scénario 5 — Export des données
+- **Étapes** : avatar → “Télécharger mes données”.
+- **Attendu** : téléchargement JSON `{ user, trips }`.
+- **Résultat** : ✅
 
-### 🔹 Scénario 2 – Formulaire incomplet
+## Scénario 6 — Suppression de compte
+- **Étapes** : avatar → “Supprimer mon compte” → confirmer.
+- **Attendu** : suppression docs Firestore liés + déconnexion.
+- **Résultat** : ✅
 
-- **URL** : `/create-trip`
-- **Étapes** :
-  1. Ne rien remplir
-  2. Cliquer "Générer"
-- **Résultat attendu** : toast d'erreur "Veuillez remplir tous les champs"
-- **Statut** : ✅ OK (testé via Jest + manuel)
+## Scénario 7 — Résilience photos
+- **Étapes** : forcer un lieu/hôtel introuvable.
+- **Attendu** : affichage placeholder sans erreur bloquante.
+- **Résultat** : ✅
 
----
-
-### 🔹 Scénario 3 – Connexion Google
-
-- **URL** : `/`
-- **Étapes** :
-  1. Cliquer "Se connecter"
-  2. Se connecter via Google
-- **Résultat attendu** : affiche nom de l’utilisateur + menu profil
-- **Statut** : ✅ OK
-
----
+## Scénario 8 — Accessibilité de base
+- **Étapes** : navigation clavier header → dialogues → boutons.
+- **Attendu** : focus visible, libellés cohérents, fermeture `Esc`.
+- **Résultat** : ✅

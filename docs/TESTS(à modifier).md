@@ -1,26 +1,18 @@
-# TESTS.md
+# Tests
 
-## 🧪 Objectif
-Ce document présente la stratégie de tests unitaires mise en œuvre pour l’application TripGenius.
+## Stack
+- **Jest** + **@testing-library/react** + **jsdom**.
+- Polyfills et mocks dans `src/setupTests.js`.
+- Mocks : Google OAuth, Firestore, Google Places, composants lourds/icônes.
 
-## 📦 Outils utilisés
-- `Jest` : framework de test JavaScript
-- `@testing-library/react` : pour tester les composants React
-- `jsdom` : environnement simulant le DOM
-- `babel-jest` : transpilation JSX
+## Couverture fonctionnelle (échantillon)
+- `Header` : consentement + login/logout.
+- `Hero` : rendu.
+- `CookieConsent` / `CookieSettings` : affichage et persistance.
+- `PlacesToVisit` : tri des activités + fallback image.
+- Pages légales : rendu statique.
 
-## Fonctionnalités couvertes
-| Composant         | Type de test     | Objectif                                 |
-|------------------|------------------|------------------------------------------|
-| Header           | unitaire         | Vérifie login, logout, affichage menu    |
-| CreateTrip       | unitaire         | Valide erreurs formulaire                |
-| PlaceCardItem    | unitaire         | Affiche image + lien Google Maps         |
-| InfoSection      | snapshot         | Rend correctement un texte statique      |
-| HotelCardItems   | unitaire         | Affiche hôtels avec fallback image       |
-| TripList         | DOM + props      | Affiche liste dynamique des voyages      |
-
-## Exécution
+## Commandes
 ```bash
-npm run test
-# ou
-npx jest
+npm test
+npm test -- --coverage

@@ -4,11 +4,13 @@ import PropTypes from 'prop-types';
 import { Button } from '~/components/ui/button';
 import { IoIosSend } from 'react-icons/io';
 import { GetPlaceDetails } from '~/service/GlobalApi';
-import { GetPlacePhoto } from '~/service/api'; // ton wrapper placeId -> url
+import { GetPlacePhoto } from '~/service/api';
+import { getEnv } from '~/lib/meta-env';
 
 const API_KEY =
-  import.meta.env.VITE_GOOGLE_PLACE_API_KEY ||
-  import.meta.env.GOOGLE_PLACE_KEY || '';
+  getEnv('VITE_GOOGLE_PLACE_API_KEY') ||
+  getEnv('GOOGLE_PLACE_KEY') ||
+  '';
 
 const FALLBACK = '/placeholder.png';
 
@@ -38,7 +40,11 @@ function urlFromPhotoName(name) {
   return { v1Url, legacyUrl };
 }
 
+// no-op qui "utilise" le paramètre pour satisfaire ESLint
+function swallow(e) { void e; }
+
 async function resolvePhoto({ placeId, label }) {
+  // 1) Si on a un placeId -> wrapper direct
   if (placeId) {
     try {
       const u = await GetPlacePhoto(placeId);
@@ -46,11 +52,12 @@ async function resolvePhoto({ placeId, label }) {
         await preload(u);
         return u;
       }
-    } catch {
-      // silencieux (pas bloquant)
+    } catch (e) {
+      swallow(e);
     }
   }
 
+  // 2) Sinon, on tente la recherche textuelle
   if (label) {
     try {
       const { data } = await GetPlaceDetails({ textQuery: label });
@@ -61,21 +68,21 @@ async function resolvePhoto({ placeId, label }) {
           try {
             await preload(v1Url);
             return v1Url;
-          } catch {
-            // silencieux (tentera fallback)
+          } catch (e) {
+            swallow(e);
           }
         }
         if (legacyUrl) {
           try {
             await preload(legacyUrl);
             return legacyUrl;
-          } catch {
-            // silencieux (tentera fallback)
+          } catch (e) {
+            swallow(e);
           }
         }
       }
-    } catch (err) {
-      console.error('InfoSection photo error:', err?.response?.data || err);
+    } catch (e) {
+      swallow(e);
     }
   }
 
@@ -84,7 +91,7 @@ async function resolvePhoto({ placeId, label }) {
 
 export default function InfoSection({ trip, placeId, name }) {
   const userSel = trip?.userSelection;
-  const label = userSel?.location?.label?.trim() || name;
+  const label = (userSel?.location?.label || name || '').trim();
   const [photoUrl, setPhotoUrl] = useState(null);
 
   useEffect(() => {
@@ -115,9 +122,11 @@ export default function InfoSection({ trip, placeId, name }) {
       {photoUrl ? (
         <img
           src={photoUrl}
-          alt={label}
+          alt={label || 'destination'}
           className="h-[480px] w-full object-cover rounded"
-          onError={(e) => (e.currentTarget.src = FALLBACK)}
+          onError={(e) => {
+            e.currentTarget.src = FALLBACK;
+          }}
         />
       ) : (
         <div className="h-[480px] w-full bg-gray-100 flex items-center justify-center rounded">

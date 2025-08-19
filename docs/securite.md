@@ -1,20 +1,31 @@
-# Sécurité du projet
+# Sécurité
 
-## Variables sensibles
-Toutes les clés API et secrets sont stockés dans un fichier `.env` local (non versionné). Exemple :
-```
-VITE_GOOGLE_PLACE_API_KEY=xxxxxxxxxxxx
-```
+## Secrets et configuration
+- Clés/API uniquement dans `.env.local` (non versionné) ou variables Vercel/IglAO.
+- `.env.example` fourni pour le mapping.
 
-## Authentification
-Le système d’authentification utilise Firebase Authentication avec OAuth Google sécurisé.
+## Authentification et consentement
+- **Google OAuth** (pas de mot de passe stocké).
+- Consentement RGPD affiché avant login.
 
-## Suivi des dépendances
-- `npm audit`
-- `npm outdated`
-- Mises à jour manuelles vérifiées mensuellement
+## Firestore (accès minimal)
+- Lecture/écriture limitées à l’utilisateur connecté (docs liés à son `uid`).
+- Pas de noms de collections/documents construits directement depuis les entrées utilisateur.
 
-## Failles OWASP couvertes
-- Pas de mot de passe stocké
-- Authentification via fournisseur externe
-- Séparation du code front/back
+## Protection XSS / injections
+- Rendu React (escape par défaut) ; pas de `dangerouslySetInnerHTML`.
+- URLs encodées ; liens externes `rel="noopener noreferrer"`.
+- Pas de SQL ; SDK Firestore officiel (évite injections NoSQL si règles ok).
+
+## Abuse & disponibilité
+- reCAPTCHA **invisible** au login ; bypass spécifique iOS documenté.
+- Quotas activés côté APIs Google.
+- Site servi en statique (CDN/IglAO) : peu d’attaque de surface, rafales mieux absorbées.
+
+## Données personnelles
+- Export JSON (`Header`) côté client.
+- Suppression de compte disponible depuis l’UI.
+- Stockage minimal (trips + consentement).
+
+## Suivi
+- UptimeRobot + LHCI ; revues régulières des règles Firestore et rotation des clés si besoin.

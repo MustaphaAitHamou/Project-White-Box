@@ -1,29 +1,17 @@
-# SUPPORT_CLIENT.md
+# Support client
 
-## 🎯 Objectif
-Documenter le processus de support client mis en œuvre pour TripGenius.
+## Canaux
+- Formulaire “Contact” sur le site.
+- Mail : support@tripgenius.eu
 
----
+## Exemple réel
+- **Contexte** : l’utilisateur ne retrouve plus son voyage.
+- **Diag** : localStorage vidé.
+- **Action** : récupération via Firestore (clé = `user.uid`).
+- **Résultat** : voyage restauré en < 24 h.
 
-## 📬 Canal utilisé
-- Formulaire de contact : https://tripgenius.eu/support
-- Email : support@tripgenius.eu
-
----
-
-## 📞 Exemple réel
-- **Problème** : Utilisateur ne retrouve pas son voyage généré
-- **Date** : 2025-07-24
-- **Diagnostic** : le localStorage a été effacé
-- **Solution** : Récupération via Firestore (clé par user.uid)
-- **Résultat** : Voyage restauré
-- **Temps de réponse** : < 24h
-
----
-
-## 🔁 Processus
-1. Signalement utilisateur via formulaire
-2. Réponse sous 48h
-3. Correction si nécessaire
-4. Ajout dans `ANOMALIES_LOG.md`
-5. MAJ `CHANGELOG.md` si fix publié
+## Processus
+1. Accusé de réception (< 48 h).
+2. Repro + diag.
+3. Correctif si bug → PR + CI.
+4. Log dans `ANOMALIES_LOG.md` et MAJ `CHANGELOG.md` si publié.

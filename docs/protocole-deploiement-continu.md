@@ -1,18 +1,16 @@
-# Protocole de déploiement continu
+# CI / CD — Protocole
 
-## Objectifs
-Permettre un déploiement automatisé et sécurisé à chaque mise à jour du code sur la branche `main`.
+## CI (intégration continue)
+- **Workflow** : `.github/workflows/ci-cd.yml`.
+- **Sur push/PR** : build Vite + ESLint, **tests Jest** (coverage) → upload **Codecov** (`coverage/coverage-final.json`) → artefacts (build, rapports LHCI).
+- **Lighthouse CI** : audit sur le build statique.
 
-## Outils utilisés
-- GitHub Actions pour la CI/CD
-- Docker pour la mise en conteneur
-- ArgoCD pour le déploiement continu (prévu)
-- ESLint pour le linting
-- Jest pour les tests unitaires
+## CD (déploiement continu)
+- **Préproduction** : déploiement **automatique** sur **Vercel** (préviews liées aux PR).
+- **Production (IglAO)** : **manuelle** pour garder la main :
+  1. `npm ci && npm run build`
+  2. Uploader le contenu de `dist/` sur IglAO (SFTP / panneau).
+  3. Règle **SPA fallback** : toutes les routes → `/index.html`.
 
-## Étapes du pipeline
-1. **Build** : Compilation du projet avec Vite
-2. **Test** : Exécution des tests unitaires avec Jest
-3. **Lint** : Vérification de la qualité du code
-4. **Packaging** : Création de l’image Docker
-5. **Déploiement** : (prévu) vers une plateforme via ArgoCD
+## Règles de version
+- **SemVer** + **tags Git**. Les releases majeures passent par une validation manuelle en préprod avant upload prod.

@@ -1,34 +1,34 @@
-  <!doctype html>
-  <html lang="fr">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<!-- Charge explicitement le script Maps + Places -->
+<script
+  async
+  src="https://maps.googleapis.com/maps/api/js?key=%VITE_GOOGLE_PLACE_API_KEY%&libraries=places&loading=async">
+</script>
 
-      <title>Trip Genius</title>
-      <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <title>TravelAI — Planifie tes voyages avec l’IA</title>
 
-      <!-- ╔═══════════════════════════════════╗
-          ║  VALIDATION + CHARGEMENT ADSENSE  ║
-          ╚═══════════════════════════════════╝ -->
+    <!-- SEO -->
+    <meta
+      name="description"
+      content="TravelAI génère des itinéraires, hôtels et activités pour ton voyage. Simple, rapide et personnalisé."
+    />
+    <meta name="robots" content="index,follow" />
+    <link rel="canonical" href="http://localhost:4173/" />
+    <!-- En prod, remplace par ton vrai domaine -->
 
-      <!-- 1)  Balise META de validation (méthode “Balise Meta”) -->
-      <meta
-        name="google-adsense-account"
-        content="ca-pub-4180830143130482"
-      />
+    <!-- (Optionnel) Google Fonts perf hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-      <!-- 2)  Script AdSense (requis pour l’affichage d’annonces) -->
-      <script
-        async
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4180830143130482"
-        crossorigin="anonymous"
-      ></script>
-
-      <!-- ═════════════════════════════════════════════════════ -->
-    </head>
-
-    <body>
-      <div id="root"></div>
-      <script type="module" src="/src/main.jsx"></script>
-    </body>
-  </html>
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="theme-color" content="#0f172a" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

@@ -12,6 +12,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { toast } from "sonner";
+import { getEnv } from "~/lib/meta-env";
 import { generateTripPlan } from "~/service/AIModal";
 import {
   Dialog,
@@ -38,6 +39,9 @@ export default function CreateTrip() {
   const [loading, setLoading] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentError, setConsentError] = useState("");
+
+  // ✅ lit la clé via notre helper compatible Jest
+  const PLACE_API_KEY = getEnv("VITE_GOOGLE_PLACE_API_KEY");
 
   const navigate = useNavigate();
   const update = (k, v) => setFormData((p) => ({ ...p, [k]: v }));
@@ -130,7 +134,7 @@ export default function CreateTrip() {
                     Destination
                   </label>
                   <GooglePlacesAutocomplete
-                    apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
+                    apiKey={PLACE_API_KEY}
                     selectProps={{
                       inputId: "destination",
                       value: place,
@@ -241,7 +245,7 @@ export default function CreateTrip() {
                 Connexion Google
               </DialogTitle>
               <DialogDescription className="text-center text-gray-600">
-                Authentifiez‑vous pour commencer votre aventure.
+                Authentifiez-vous pour commencer votre aventure.
               </DialogDescription>
             </DialogHeader>
 
@@ -279,7 +283,7 @@ export default function CreateTrip() {
                   setConsentError("Merci d’accepter les conditions");
                   return;
                 }
-                login(); // 🟢 PAS TOUCHE : ça déclenche la génération IA après auth
+                login(); // 🟢 lance l’authent Google puis la génération
               }}
               className="mt-6 flex w-full items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-500 text-white"
             >

@@ -13,7 +13,7 @@ env:
 
 jobs:
   # ─────────────────────────────────────────────────────────────
-  # 1) Build + checks
+  # 1) Build + lint
   # ─────────────────────────────────────────────────────────────
   build:
     runs-on: ubuntu-latest
@@ -28,7 +28,7 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      # ✅ clés factices pour éviter les crashs en build/LHCI
+      # Clés factices pour que le bundle/LHCI ne crash pas
       - name: Create .env.local for build
         run: |
           cat > .env.local << 'EOF'
@@ -51,19 +51,17 @@ jobs:
           path: ${{ env.BUILD_DIR }}
 
   # ─────────────────────────────────────────────────────────────
-  # 2) Tests unitaires + couverture
+  # 2) Tests + couverture Codecov
   # ─────────────────────────────────────────────────────────────
   test:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-
       - run: npm ci
 
       - name: Run tests
@@ -87,12 +85,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Build image
         run: |
           docker build -t tripgenius:${{ github.sha }} .
           docker image save tripgenius:${{ github.sha }} | gzip > image.tar.gz
-
       - uses: actions/upload-artifact@v4
         with:
           name: docker-image
@@ -107,7 +103,6 @@ jobs:
     environment: preview
     steps:
       - uses: actions/checkout@v4
-
       - name: Deploy to Vercel (Preview)
         run: |
           npm install -g vercel
@@ -117,50 +112,32 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
   # ─────────────────────────────────────────────────────────────
-  # 5) Lighthouse CI (collect -> assert -> upload artefact)
+  # 5) Lighthouse CI sur le build statique
   # ─────────────────────────────────────────────────────────────
   lighthouse:
     needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      # Récupère le build produit plus haut
       - name: Download build artefact
         uses: actions/download-artifact@v4
         with:
           name: site-build
           path: ${{ env.BUILD_DIR }}
 
-      # 1) Collect
-      - name: LHCI collect
-        run: npx -y @lhci/cli@latest collect --config=.lighthouserc.json --verbose
-
-      # 2) Assert (échoue si seuils non atteints)
-      - name: LHCI assert
-        run: npx -y @lhci/cli@latest assert --config=.lighthouserc.json
-
-      # 3) Upload local -> .lighthouseci
-      - name: LHCI upload (filesystem)
-        run: npx -y @lhci/cli@latest upload --config=.lighthouserc.json --target=filesystem --outputDir=.lighthouseci
+      - name: Run Lighthouse CI
+        run: npx -y @lhci/cli@latest autorun --config=.lighthouserc.json --verbose
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
-      # Debug: montrer ce qui a été généré
-      - name: List LHCI outputs
-        run: |
-          ls -la .lighthouseci || true
-          find .lighthouseci -maxdepth 2 -type f -print || true
-
-      # Artefacts GitHub => plus de warning "No files were found…"
       - name: Upload LHCI report
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-report
-          path: .lighthouseci/**
-          if-no-files-found: error
+          path: .lighthouseci
+          if-no-files-found: warn
           retention-days: 7

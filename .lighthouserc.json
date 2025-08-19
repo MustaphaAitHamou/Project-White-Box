@@ -1,8 +1,9 @@
 {
   "ci": {
     "collect": {
-      "startServerCommand": "npx -y http-server dist -p 4173 -s --cors",
-      "startServerReadyPattern": "(?:127\\.0\\.0\\.1|localhost):4173",
+      "startServerCommand": "npx -y serve -s dist -l 4173",
+      "startServerReadyPattern": "(Local|127\\.0\\.0\\.1|localhost):\\s*http://(?:127\\.0\\.0\\.1|localhost):4173/?",
+      "startServerReadyTimeout": 120000,
       "url": [
         "http://localhost:4173/",
         "http://localhost:4173/create-trip"

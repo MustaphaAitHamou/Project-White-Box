@@ -11,9 +11,6 @@ env:
   BUILD_DIR: "dist"
   LC_ALL: "C.UTF-8"
 
-# ─────────────────────────────────────────────────────────────
-# 1️⃣  Build + static checks
-# ─────────────────────────────────────────────────────────────
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,11 +25,21 @@ jobs:
       - name: Install deps
         run: npm ci
 
+      # ✅ Clés factices pour que le bundle ne crash pas en prod/LHCI
+      - name: Create .env.local for build
+        run: |
+          cat > .env.local << 'EOF'
+          VITE_GOOGLE_PLACE_API_KEY=fake-place-key
+          VITE_GOOGLE_GEMINI_AI_API_KEY=fake-gemini-key
+          VITE_GOOGLE_AUTH_CLIENT_ID=fake-client.apps.googleusercontent.com
+          VITE_RECAPTCHA_SITE_KEY=fake-recaptcha
+          EOF
+
       - name: Lint & type-check
-        run: npm run lint --if-present
+        run: npm run lint
 
       - name: Build (Vite)
-        run: npm run build        # produit ./dist
+        run: npm run build
 
       - name: Upload build artefact
         uses: actions/upload-artifact@v4
@@ -40,9 +47,6 @@ jobs:
           name: site-build
           path: ${{ env.BUILD_DIR }}
 
-# ─────────────────────────────────────────────────────────────
-# 2️⃣  Tests unitaires + couverture (Jest)
-# ─────────────────────────────────────────────────────────────
   test:
     needs: build
     runs-on: ubuntu-latest
@@ -52,25 +56,24 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+      - run: npm ci
 
-      - name: Install deps
-        run: npm ci
+      # Si tu utilises Jest, garde cette ligne.
+      - name: Run tests
+        run: npm run test -- --coverage
+        env:
+          NODE_OPTIONS: "--experimental-vm-modules"
 
-      - name: Run Jest + coverage
-        run: npm test -- --coverage
-
+      # Si tu es sur Vitest, adapte le chemin et la commande ci-dessus.
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          # Jest produit coverage/coverage-final.json
-          files: ./coverage/coverage-final.json
           token: ${{ secrets.CODECOV_TOKEN }}
+          # Jest: coverage-final.json | Vitest: vitest-final.json
+          files: ./coverage/coverage-final.json
           flags: unittests
           fail_ci_if_error: true
 
-# ─────────────────────────────────────────────────────────────
-# 3️⃣  Packaging Docker (optionnel)
-# ─────────────────────────────────────────────────────────────
   package:
     needs: test
     runs-on: ubuntu-latest
@@ -85,9 +88,6 @@ jobs:
           name: docker-image
           path: image.tar.gz
 
-# ─────────────────────────────────────────────────────────────
-# 4️⃣  Déploiement Vercel (preview)
-# ─────────────────────────────────────────────────────────────
   deploy-preprod:
     needs: package
     runs-on: ubuntu-latest
@@ -96,29 +96,26 @@ jobs:
       - uses: actions/checkout@v4
       - name: Deploy to Vercel (Preview)
         run: |
-          npm i -g vercel
+          npm install -g vercel
           vercel --token ${{ secrets.VERCEL_TOKEN }} --prod=false --confirm --yes
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-# ─────────────────────────────────────────────────────────────
-# 5️⃣  Audit Lighthouse CI (sans vite preview)
-# ─────────────────────────────────────────────────────────────
   lighthouse:
     needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Récupère le build statique
+      # Récupère le build produit plus haut
       - name: Download build artefact
         uses: actions/download-artifact@v4
         with:
           name: site-build
           path: ${{ env.BUILD_DIR }}
 
-      # Pas besoin de node_modules/vite : LHCI sert ./dist lui-même
+      # LHCI via npx (pas besoin d’installer les devDeps)
       - name: Run Lighthouse CI
         run: npx -y @lhci/cli@latest autorun --config=.lighthouserc.json --verbose
         env:
@@ -128,4 +125,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-report
-          path: .lighthouseci/**
+          path: .lighthouseci/**/*

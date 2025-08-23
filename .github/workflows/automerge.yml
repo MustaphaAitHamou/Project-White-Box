@@ -1,13 +1,26 @@
 # .github/workflows/automerge.yml
-name: Automerge safe deps
-on: pull_request
-permissions: contents: write, pull-requests: write
+name: Automerge safe Dependabot updates
+
+on:
+  # use pull_request_target so the GITHUB_TOKEN has write perms on Dependabot PRs
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   automerge:
-    if: github.actor == 'dependabot[bot]'
+    # only for Dependabot PRs
+    if: ${{ github.actor == 'dependabot[bot]' }}
     runs-on: ubuntu-latest
+
     steps:
-      - uses: fastify/github-action-merge-dependabot@v3
+      - name: Merge patch/minor Dependabot PRs when CI is green
+        uses: fastify/github-action-merge-dependabot@v3
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # merge only patch/minor (majors will not be merged)
           target: minor
           merge-method: squash

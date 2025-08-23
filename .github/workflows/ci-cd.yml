@@ -3,9 +3,9 @@ name: CI-CD Pipeline
 on:
   push:
     branches: [ main ]
-    tags: [ 'v*.*.*' ]        # ex: v0.2.1 pour ton run "sur tag"
+    tags: [ 'v*.*.*' ]        # ex: v0.2.1 pour ta capture "ref: refs/tags/v0.2.1"
   schedule:
-    - cron: '0 6 * * 1'       # LHCI planifié chaque lundi 06:00 UTC
+    - cron: '0 6 * * 1'       # LHCI planifié (lundi 06:00 UTC)
   workflow_dispatch:
 
 permissions:
@@ -23,11 +23,10 @@ env:
 jobs:
   # 1) Build + lint
   build:
-    if: ${{ github.event_name != 'schedule' }}   # on saute pour le cron LHCI dédié
+    if: ${{ github.event_name != 'schedule' }}   # on saute pour le cron dédié LHCI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -36,10 +35,10 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      # Clés factices pour éviter les crashs de build/LHCI
+      # clés factices pour que le build/LHCI ne plante pas
       - name: Create .env.local for build
         run: |
-          cat > .env.local << 'EOF'
+          cat > .env.local <<'EOF'
           VITE_GOOGLE_PLACE_API_KEY=fake-place-key
           VITE_GOOGLE_GEMINI_AI_API_KEY=fake-gemini-key
           VITE_GOOGLE_AUTH_CLIENT_ID=fake-client.apps.googleusercontent.com
@@ -59,7 +58,7 @@ jobs:
           path: ${{ env.BUILD_DIR }}
           retention-days: 7
 
-  # 2) Tests + couverture (Codecov seulement si secret présent)
+  # 2) Tests + couverture (Codecov si token présent)
   test:
     if: ${{ github.event_name != 'schedule' }}
     needs: build
@@ -77,49 +76,17 @@ jobs:
         env:
           NODE_OPTIONS: "--experimental-vm-modules"
 
-      - name: Upload coverage to Codecov (skipped if no token)
-        if: ${{ secrets.CODECOV_TOKEN }}
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/coverage-final.json
-          flags: unittests
-          fail_ci_if_error: true
-
-  # 3) Packaging Docker (optionnel si Dockerfile présent)
-  package:
-    if: ${{ github.event_name != 'schedule' && hashFiles('Dockerfile') != '' }}
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build image
-        run: |
-          docker build -t tripgenius:${{ github.sha }} .
-          docker image save tripgenius:${{ github.sha }} | gzip > image.tar.gz
-      - uses: actions/upload-artifact@v4
-        with:
-          name: docker-image
-          path: image.tar.gz
-          retention-days: 7
-
-  # 4) Déploiement Vercel (Preview) — uniquement si secrets présents
-  deploy-preprod:
-    if: ${{ github.event_name != 'schedule' && startsWith(github.ref, 'refs/heads/main') && secrets.VERCEL_TOKEN && secrets.VERCEL_ORG_ID && secrets.VERCEL_PROJECT_ID }}
-    needs: package
-    runs-on: ubuntu-latest
-    environment: preview
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Vercel (Preview)
-        run: |
-          npm i -g vercel
-          vercel --token ${{ secrets.VERCEL_TOKEN }} --prod=false --confirm --yes
+      - name: Upload coverage to Codecov (skip if no token)
         env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          if [ -n "$CODECOV_TOKEN" ]; then
+            npx codecov -t "$CODECOV_TOKEN" -f ./coverage/coverage-final.json
+          else
+            echo "Skipping Codecov: CODECOV_TOKEN not set."
+          fi
 
-  # 5) Lighthouse CI sur artifact (push/tag) — upload fichiers, pas besoin de token
+  # 3) Lighthouse CI sur l'artefact (push/tag)
   lighthouse:
     if: ${{ github.event_name != 'schedule' }}
     needs: test
@@ -147,7 +114,28 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-  # 6) LHCI planifié (cron) — build + audit autonome (icône "clock")
+  # 4) Déploiement Preview Vercel (seulement sur main, secrets optionnels)
+  deploy-preprod:
+    if: ${{ github.event_name != 'schedule' && startsWith(github.ref, 'refs/heads/main') }}
+    needs: lighthouse
+    runs-on: ubuntu-latest
+    environment: preview
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Vercel (Preview) if secrets present
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            npm i -g vercel
+            vercel --token "$VERCEL_TOKEN" --prod=false --confirm --yes
+          else
+            echo "Skipping Vercel preview: missing secrets."
+          fi
+
+  # 5) LHCI planifié (cron) — build + audit autonome (icône "clock")
   lighthouse-scheduled:
     if: ${{ github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
@@ -161,7 +149,7 @@ jobs:
 
       - name: Create .env.local for build (cron)
         run: |
-          cat > .env.local << 'EOF'
+          cat > .env.local <<'EOF'
           VITE_GOOGLE_PLACE_API_KEY=fake-place-key
           VITE_GOOGLE_GEMINI_AI_API_KEY=fake-gemini-key
           VITE_GOOGLE_AUTH_CLIENT_ID=fake-client.apps.googleusercontent.com
@@ -181,18 +169,23 @@ jobs:
           path: .lighthouseci
           retention-days: 7
 
-  # 7) Déploiement Production Vercel sur tag v*.*.* (secrets requis)
+  # 6) Déploiement Production Vercel sur tag (secrets optionnels)
   deploy-prod:
-    if: startsWith(github.ref, 'refs/tags/v') && secrets.VERCEL_TOKEN && secrets.VERCEL_ORG_ID && secrets.VERCEL_PROJECT_ID
-    needs: [lighthouse]
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: lighthouse
     runs-on: ubuntu-latest
     environment: production
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy to Vercel (Production)
-        run: |
-          npm i -g vercel
-          vercel --token ${{ secrets.VERCEL_TOKEN }} --prod --confirm --yes
+      - name: Deploy to Vercel (Production) if secrets present
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            npm i -g vercel
+            vercel --token "$VERCEL_TOKEN" --prod --confirm --yes
+          else
+            echo "Skipping Vercel production deploy: missing secrets."
+          fi

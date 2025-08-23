@@ -51,29 +51,41 @@ jobs:
           path: ${{ env.BUILD_DIR }}
 
   # ─────────────────────────────────────────────────────────────
-  # 2) Tests + couverture Codecov
+  # 2) Tests + couverture (artefact + Codecov)
   # ─────────────────────────────────────────────────────────────
   test:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # ✅ évite l'erreur Codecov "properly create commit"
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+
       - run: npm ci
 
-      - name: Run tests
+      - name: Run tests (Jest + coverage)
         run: npm run test -- --coverage
         env:
           NODE_OPTIONS: "--experimental-vm-modules"
 
+      # ✅ Garde une preuve téléchargeable pour le dossier
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+
+      # ✅ Envoi (facultatif si dépôt public, sinon TOKEN requis)
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/coverage-final.json
+          files: coverage/coverage-final.json
+          token: ${{ secrets.CODECOV_TOKEN }} # inutile si repo public
           flags: unittests
           fail_ci_if_error: true
 
@@ -85,17 +97,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Build image
         run: |
           docker build -t tripgenius:${{ github.sha }} .
           docker image save tripgenius:${{ github.sha }} | gzip > image.tar.gz
+
       - uses: actions/upload-artifact@v4
         with:
           name: docker-image
           path: image.tar.gz
 
   # ─────────────────────────────────────────────────────────────
-  # 4) Déploiement Vercel (preview)
+  # 4) Déploiement Vercel (Preview)
   # ─────────────────────────────────────────────────────────────
   deploy-preprod:
     needs: package
@@ -103,9 +117,10 @@ jobs:
     environment: preview
     steps:
       - uses: actions/checkout@v4
+
       - name: Deploy to Vercel (Preview)
         run: |
-          npm install -g vercel
+          npm i -g vercel
           vercel --token ${{ secrets.VERCEL_TOKEN }} --prod=false --confirm --yes
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -119,6 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}

@@ -2,20 +2,23 @@
 
 # Journal des anomalies
 
-Je note ici les incidents détectés pendant la recette et leur traitement. Les identifiants renvoient aux issues GitHub (branches `fix/Bxx-*`). Les dates sont au format AAAA-MM-JJ.
+Source unique des incidents détectés et de leur traitement.  
+Contexte projet **solo** : pas d’issues GitHub ni de PR ; tout est consigné ici et relié au
+commit (SHA) et à l’entrée correspondante du `CHANGELOG.md`.  
+Dates au format AAAA-MM-JJ.
 
 ---
 
 ### B01 — Codecov n’uploadait pas la couverture
 - **Signalement** : 2025-02-05  
 - **Correction** : 2025-02-05 — **Statut** : Résolu — **Sévérité** : Haute  
-- **Symptômes** : étape Codecov en échec sur la CI, badge grisé sur la PR.  
+- **Symptômes** : étape Codecov en échec sur la CI, badge grisé dans le tableau de bord Codecov.  
 - **Environnement** : GitHub Actions.  
-- **Impact** : visibilité qualité absente → blocage revue de code.  
+- **Impact** : visibilité qualité absente → risque de régressions non vues.  
 - **Détection** : job rouge dans le workflow (logs Codecov “file not found”).  
 - **Cause racine** : mauvais chemin (`vitest-final.json` alors que Jest génère `coverage-final.json`).  
 - **Correctif** : upload sur `./coverage/coverage-final.json` + nettoyage du step.  
-- **Vérification/NR** : job vert + badge Codecov mis à jour.  
+- **Vérification/NR** : job vert + badge Codecov à jour.  
 - **Évidence** : (capture du job Codecov vert et du badge à jour).
 
 ---
@@ -43,7 +46,7 @@ Je note ici les incidents détectés pendant la recette et leur traitement. Les 
 - **Détection** : audit `.gitignore` + scan secrets.  
 - **Cause racine** : mauvaise pratique historique ; absence de `.env.example`.  
 - **Correctif** : purge historique, rotation des clés, ajout `.env.example`, stockage des secrets dans GitHub/Vercel.  
-- **Vérification/NR** : scan secrets = 0 findings ; build OK avec variables d’env côté CI.  
+- **Vérification/NR** : scan secrets = 0 findings ; build OK avec variables d’env en CI.  
 - **Évidence** : (capture des secrets configurés et du scan à zéro).
 
 ---
@@ -58,7 +61,7 @@ Je note ici les incidents détectés pendant la recette et leur traitement. Les 
 - **Cause racine** : règles par défaut permissives.  
 - **Correctif** : règles “propriétaire uniquement” basées sur l’UID ; tests à l’émulateur.  
 - **Vérification/NR** : accès refusé pour utilisateur tiers, autorisé pour le propriétaire.  
-- **Évidence** : (capture des règles et des tests émulateur).
+- **Évidence** : (captures des règles et des tests émulateur).
 
 ---
 
@@ -148,7 +151,7 @@ Je note ici les incidents détectés pendant la recette et leur traitement. Les 
 
 ### B11 — Lien “Mes voyages” absent en mobile
 - **Signalement** : 2025-02-14  
-- **Correction** : 2025-02-14 — **Statut** : Résolu — **Sévérité** : Basse  
+- **Correction** : 2025-02-14 — **Statut** : Résolu — **Sévérité** : Haute  
 - **Symptômes** : item masqué en viewport étroit.  
 - **Environnement** : header responsive.  
 - **Impact** : navigation incomplète en mobile.  
@@ -174,5 +177,7 @@ Je note ici les incidents détectés pendant la recette et leur traitement. Les 
 
 ---
 
-## Méthode commune
-Chaque anomalie a son issue GitHub avec reproduction, cause, correctif, critères d’acceptation et la PR associée. Toute correction passe la CI (lint, tests, LHCI) et alimente le CHANGELOG.
+## Méthode commune (projet solo)
+Chaque anomalie ouvre une **entrée** dans `ANOMALIES_LOG.md` (repro, cause, correctif, critères d’acceptation, **SHA** du commit).  
+Toute correction passe la **CI** (lint, tests, couverture, **LHCI**).  
+Le `CHANGELOG.md` est mis à jour, puis le déploiement s’effectue ; en cas de régression détectée, **rollback Vercel** immédiat.

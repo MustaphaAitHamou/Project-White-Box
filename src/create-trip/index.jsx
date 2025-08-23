@@ -33,6 +33,12 @@ import Footer from "~/view-trip/components/Footer";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 export default function CreateTrip() {
+  // État principal du formulaire :
+  // - place : valeur retournée par Google Places
+  // - formData : je stocke location, noOfDays, budget, traveler
+  // - openDialog : j’affiche la modale d’auth quand il n’y a pas d’utilisateur
+  // - loading : j’empêche les doubles soumissions pendant la génération
+  // - consentChecked / consentError : gestion du consentement dans la modale
   const [place, setPlace] = useState(null);
   const [formData, setFormData] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
@@ -40,12 +46,18 @@ export default function CreateTrip() {
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentError, setConsentError] = useState("");
 
-  // ✅ lit la clé via notre helper compatible Jest
+  // Je lis la clé via un helper compatible Vite + Jest (fallback test-friendly).
   const PLACE_API_KEY = getEnv("VITE_GOOGLE_PLACE_API_KEY");
 
+  // Navigation programmatique vers la page du trip
   const navigate = useNavigate();
+
+  // Petit utilitaire pour mettre à jour les champs du formulaire
   const update = (k, v) => setFormData((p) => ({ ...p, [k]: v }));
 
+  // Flux de connexion Google :
+  // - onSuccess : je récupère le profil, je persiste l’utilisateur, j’enregistre le consentement en base
+  // - onError : je notifie l’échec
   const login = useGoogleLogin({
     onSuccess: async ({ access_token }) => {
       try {
@@ -55,6 +67,7 @@ export default function CreateTrip() {
         localStorage.setItem("user", JSON.stringify(data));
         window.dispatchEvent(new Event("userChanged"));
 
+        // Je trace le consentement côté Firestore
         await setDoc(doc(db, "consents", data.id), {
           email: data.email,
           consent: true,
@@ -62,6 +75,7 @@ export default function CreateTrip() {
         });
 
         setOpenDialog(false);
+        // J’enchaîne sur la génération après authentification
         generateTrip();
       } catch {
         toast.error("Impossible de récupérer le profil Google");
@@ -72,6 +86,11 @@ export default function CreateTrip() {
     scope: "openid email profile",
   });
 
+  // Routine de génération :
+  // 1) je force l’auth si aucun user
+  // 2) je valide les champs requis
+  // 3) je construis le prompt et j’appelle le service IA
+  // 4) j’enregistre le résultat dans Firestore et je redirige
   async function generateTrip() {
     setLoading(true);
 
@@ -87,14 +106,17 @@ export default function CreateTrip() {
       return;
     }
 
+    // Construction du prompt strict à partir des placeholders
     const prompt = AI_PROMPT.replace("{location}", location.label)
       .replace(/{totalDays}/g, noOfDays)
       .replace("{traveler}", traveler)
       .replace("{budget}", budget);
 
     try {
+      // Appel au service IA (réponse structurée attendue)
       const res = await generateTripPlan(prompt);
 
+      // Je crée un id simple basé sur l’horodatage (suffisant pour ce contexte)
       const id = Date.now().toString();
       await setDoc(doc(db, "AITrips", id), {
         userSelection: formData,
@@ -103,6 +125,7 @@ export default function CreateTrip() {
         id,
       });
 
+      // Redirection vers la vue du trip généré
       navigate(`/view-trip/${id}`);
     } catch (err) {
       console.error(err);
@@ -114,8 +137,10 @@ export default function CreateTrip() {
 
   return (
     <>
+      {/* Conteneur global avec fond en dégradé discret */}
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700">
         <section className="py-16 px-6 md:px-20">
+          {/* Carte principale translucide : meilleure lisibilité sur le fond */}
           <div className="mx-auto max-w-5xl bg-white/80 backdrop-blur-lg border border-white/30 rounded-3xl p-10 shadow-2xl">
             <h2 className="text-3xl font-extrabold text-gray-800 text-center">
               Crée ton voyage
@@ -123,9 +148,9 @@ export default function CreateTrip() {
 
             {/* ----------- Formulaire ----------- */}
             <div className="mt-10 grid gap-8 md:grid-cols-2">
-              {/* Colonne gauche */}
+              {/* Colonne gauche : destination + nombre de jours */}
               <div className="space-y-8">
-                {/* Destination */}
+                {/* Destination : composant contrôlé via selectProps */}
                 <div>
                   <label
                     htmlFor="destination"
@@ -147,7 +172,7 @@ export default function CreateTrip() {
                   />
                 </div>
 
-                {/* Nombre de jours */}
+                {/* Nombre de jours : champ numérique minimaliste */}
                 <div>
                   <label htmlFor="days" className="font-semibold text-gray-700">
                     Nombre de jours
@@ -163,9 +188,9 @@ export default function CreateTrip() {
                 </div>
               </div>
 
-              {/* Colonne droite */}
+              {/* Colonne droite : budget + voyageurs */}
               <div className="space-y-8">
-                {/* Budget */}
+                {/* Budget : je stocke seulement le titre pour le prompt */}
                 <div>
                   <p className="font-semibold text-gray-700">Budget</p>
                   <div className="grid grid-cols-3 gap-3 mt-3">
@@ -187,7 +212,7 @@ export default function CreateTrip() {
                   </div>
                 </div>
 
-                {/* Voyageurs */}
+                {/* Voyageurs : même logique, je stocke la valeur people */}
                 <div>
                   <p className="font-semibold text-gray-700">Voyageurs</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
@@ -211,7 +236,7 @@ export default function CreateTrip() {
               </div>
             </div>
 
-            {/* Bouton Générer */}
+            {/* Bouton d’action principal : je désactive pendant la génération */}
             <div className="mt-12 text-center">
               <Button
                 onClick={generateTrip}
@@ -236,6 +261,7 @@ export default function CreateTrip() {
         </section>
 
         {/* ---------- Dialog Connexion Google ---------- */}
+        {/* Je demande un consentement explicite avant de déclencher le flux OAuth. */}
         <Dialog open={openDialog} onOpenChange={setOpenDialog}>
           <DialogOverlay />
           <DialogContent>
@@ -279,6 +305,7 @@ export default function CreateTrip() {
 
             <Button
               onClick={() => {
+                // Je refuse de lancer l’auth tant que le consentement n’est pas coché
                 if (!consentChecked) {
                   setConsentError("Merci d’accepter les conditions");
                   return;
@@ -304,6 +331,7 @@ export default function CreateTrip() {
         </Dialog>
       </div>
 
+      {/* Footer global */}
       <Footer />
     </>
   );

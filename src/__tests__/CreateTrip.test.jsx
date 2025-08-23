@@ -2,12 +2,21 @@
  * @jest-environment jsdom
  */
 /* eslint-env jest */
+/* 
+  Tests d’intégration rapides du flux CreateTrip.
+  Je couvre trois cas :
+    - utilisateur déjà connecté mais formulaire vide → toast d’erreur ;
+    - même scénario en variante courte ;
+    - “happy path” complet : saisie, consentement, login Google mocké,
+      génération du plan, écriture Firestore et navigation finale.
+*/
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import CreateTrip from "~/create-trip";
 
 // ---- Mocks stables (une seule fois) ----
+// Je fige les options pour rendre les tests déterministes.
 jest.mock("~/constants/options", () => ({
   AI_PROMPT:
     "Trip in {location} for {totalDays} days with {traveler} on {budget}",
@@ -16,6 +25,7 @@ jest.mock("~/constants/options", () => ({
 }));
 
 // Footer mock (nommé + displayName)
+// Je remplace le footer réel par un composant minimal pour éviter les effets de style/DOM.
 jest.mock("~/view-trip/components/Footer", () => {
   const React = require("react");
   function MockFooter() {
@@ -26,6 +36,7 @@ jest.mock("~/view-trip/components/Footer", () => {
 });
 
 // react-google-places-autocomplete mock (nommé + displayName + propTypes)
+// Je simule un bouton qui injecte directement une valeur “Paris, France”.
 jest.mock("react-google-places-autocomplete", () => {
   const React = require("react");
   const PropTypes = require("prop-types");
@@ -55,46 +66,55 @@ jest.mock("react-google-places-autocomplete", () => {
   return { __esModule: true, default: MockGooglePlaces };
 });
 
+// J’uniformise l’accès à la clé Places via le helper mocké.
 jest.mock("~/lib/meta-env", () => ({ getEnv: () => "fake-key" }));
 
+// Je stubbe les toasts pour pouvoir vérifier les appels sans afficher d’UI.
 jest.mock("sonner", () => ({
   toast: { error: jest.fn(), success: jest.fn(), info: jest.fn() },
 }));
 import { toast } from "sonner";
 
+// Je mocke axios pour contrôler la réponse du profil Google.
 jest.mock("axios");
 import axios from "axios";
 
+// Je remplace l’appel IA par une promesse résolue et traçable.
 jest.mock("~/service/AIModal", () => ({
   generateTripPlan: jest.fn(() => Promise.resolve({ plan: "ok" })),
 }));
 import { generateTripPlan } from "~/service/AIModal";
 
+// Je remplace Firestore : setDoc/doc retournent des doubles inoffensifs.
 jest.mock("firebase/firestore", () => ({
   setDoc: jest.fn(() => Promise.resolve()),
   doc: jest.fn((db, col, id) => ({ db, col, id })),
 }));
 import { setDoc } from "firebase/firestore";
 
+// Je fournis un db vide pour satisfaire les imports.
 jest.mock("~/service/firebaseConfig", () => ({ db: {} }));
 
+// Je capte useNavigate pour vérifier la navigation programmée.
 const mockNavigate = jest.fn();
 jest.mock("react-router-dom", () => {
   const actual = jest.requireActual("react-router-dom");
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
+// Je mocke le hook de login Google pour déclencher onSuccess à la demande.
 jest.mock("@react-oauth/google", () => ({ useGoogleLogin: jest.fn() }));
 import { useGoogleLogin } from "@react-oauth/google";
 
 describe("CreateTrip – tests fusionnés (flow + vérifs rapides)", () => {
+  // Je repars d’un état propre avant chaque test.
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
   });
 
   test("affiche une erreur si le formulaire est vide (utilisateur déjà authentifié)", () => {
-    // Simule un user déjà connecté pour passer la barrière d'auth
+    // Je simule un utilisateur connecté (ce qui évite l’ouverture du dialog).
     localStorage.setItem(
       "user",
       JSON.stringify({ email: "u@test.tld", id: "u1" })
@@ -106,16 +126,19 @@ describe("CreateTrip – tests fusionnés (flow + vérifs rapides)", () => {
       </MemoryRouter>
     );
 
+    // Sans remplir le formulaire, je clique sur “Générer”.
     fireEvent.click(screen.getByRole("button", { name: /générer/i }));
 
+    // Je m’attends à un toast d’erreur…
     expect(toast.error).toHaveBeenCalledWith(
       "Veuillez remplir tous les champs"
     );
-    // Et surtout pas de dialog d'auth qui s'ouvre
+    // …et surtout pas au dialog Google.
     expect(screen.queryByText(/connexion google/i)).not.toBeInTheDocument();
   });
 
   test("affiche un toast d’erreur si on génère sans champs requis (variante courte)", () => {
+    // Même idée, en plus concis.
     localStorage.setItem("user", JSON.stringify({ email: "u@test.io" }));
 
     render(
@@ -131,12 +154,15 @@ describe("CreateTrip – tests fusionnés (flow + vérifs rapides)", () => {
   });
 
   test("happy path : choix + consentement + login + génération + navigation", async () => {
+    // Je fixe Date.now pour que l’ID généré soit prédictible.
     const dateSpy = jest.spyOn(Date, "now").mockReturnValue(12345);
 
+    // Je fais en sorte que le hook exécute immédiatement onSuccess avec un token factice.
     useGoogleLogin.mockImplementation((opts) => () =>
       opts.onSuccess({ access_token: "token-123" })
     );
 
+    // Je simule la réponse Google UserInfo.
     axios.get.mockResolvedValue({
       data: { email: "u@test.tld", id: "uid-1" },
     });
@@ -147,21 +173,21 @@ describe("CreateTrip – tests fusionnés (flow + vérifs rapides)", () => {
       </MemoryRouter>
     );
 
-    // 1) Remplir le formulaire
+    // 1) Je remplis le formulaire : destination, jours, budget, voyageurs.
     fireEvent.click(screen.getByTestId("mock-places")); // Destination -> Paris
 
     const daysInput = screen.getByLabelText(/nombre de jours/i);
     fireEvent.change(daysInput, { target: { value: "3" } });
 
-    // Les noms accessibles incluent souvent l’icône, on cible par regex
+    // Je sélectionne Budget et Voyageurs (les libellés incluent parfois des icônes).
     fireEvent.click(screen.getByRole("button", { name: /budget test/i }));
     fireEvent.click(screen.getByRole("button", { name: /solo/i }));
 
-    // 2) Cliquer Générer => ouverture du dialog (pas d'utilisateur en localStorage)
+    // 2) Je clique sur Générer → j’attends l’ouverture du dialog (pas d’utilisateur stocké au départ).
     fireEvent.click(screen.getByRole("button", { name: /générer/i }));
     expect(await screen.findByText(/connexion google/i)).toBeInTheDocument();
 
-    // 3) Cliquer sans consentement => erreur
+    // 3) Sans consentement, je m’attends à un message d’erreur.
     fireEvent.click(
       screen.getByRole("button", { name: /continuer avec google/i })
     );
@@ -169,7 +195,7 @@ describe("CreateTrip – tests fusionnés (flow + vérifs rapides)", () => {
       await screen.findByText(/merci d’accepter les conditions/i)
     ).toBeInTheDocument();
 
-    // 4) Consentement + login → génération + navigation
+    // 4) Je coche la case, je relance → login mocké, génération, navigation.
     fireEvent.click(screen.getByRole("checkbox", { name: /j.?accepte/i }));
     fireEvent.click(
       screen.getByRole("button", { name: /continuer avec google/i })
@@ -180,12 +206,13 @@ describe("CreateTrip – tests fusionnés (flow + vérifs rapides)", () => {
       expect(mockNavigate).toHaveBeenCalledWith("/view-trip/12345");
     });
 
-    // Firebase : 1 écriture consentement + 1 écriture trip
+    // Je vérifie les écritures Firestore : consentement + trip sauvegardé.
     expect(setDoc).toHaveBeenCalledTimes(2);
     const [consentCall, tripCall] = setDoc.mock.calls;
     expect(consentCall[0].col).toBe("consents");
     expect(tripCall[0].col).toBe("AITrips");
 
+    // Je restaure Date.now.
     dateSpy.mockRestore();
   });
 });

@@ -1,9 +1,24 @@
+# Fichier de configuration Dependabot v2.
+# Je demande à Dependabot de vérifier les dépendances npm et d’ouvrir des PRs groupées.
+
 version: 2
+
 updates:
+  # Je cible l’écosystème npm à la racine du repo.
   - package-ecosystem: "npm"
     directory: "/"
+
+    # Je programme un passage hebdomadaire, le lundi à 07:00.
+    # L’heure est en UTC côté GitHub Actions.
     schedule: { interval: "weekly", day: "monday", time: "07:00" }
+
+    # Je limite le nombre de PRs ouvertes simultanément.
     open-pull-requests-limit: 10
+
+    # Je regroupe certaines maj pour réduire le bruit des PRs.
     groups:
+      # Je regroupe tout ce qui touche à React (core + router).
       react-stack: { patterns: ["react*", "react-router-dom"] }
+
+      # Je regroupe les outils de build/qualité/tests.
       tooling:     { patterns: ["vite*", "eslint*", "jest*", "babel*", "lhci*"] }

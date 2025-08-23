@@ -1,10 +1,16 @@
 // src/__tests__/meta-env.test.js
 /* eslint-env jest, browser */
+/**
+ * Je vérifie le helper getEnv :
+ * - priorise window.__ENV__ quand présent (runtime navigateur/vite)
+ * - sinon lit globalThis.importMetaEnv (injecté par setupTests en Jest)
+ * - sinon retourne le fallback fourni.
+ */
 import { getEnv } from '~/lib/meta-env';
 
 describe('getEnv', () => {
   afterEach(() => {
-    // nettoyage propre
+    // Je nettoie proprement les variables globales pour éviter des fuites entre tests.
     if ('__ENV__' in window) delete window.__ENV__;
     delete globalThis.importMetaEnv;
   });

@@ -1,13 +1,22 @@
+// Page statique "Mentions légales".
+// Je présente les informations obligatoires : éditeur, hébergeur, responsabilité,
+// propriété intellectuelle, données personnelles et contact. Je garde une mise en page
+// simple : une carte centrée, lisible sur fond sombre, sans logique JS.
+
 import React from 'react';
 import Footer from '~/view-trip/components/Footer';
 
 export default function LegalMentions() {
   return (
+    // Je prends toute la hauteur d’écran et je centre le contenu.
     <div className="min-h-screen flex flex-col bg-slate-900 text-white">
       <main className="flex-grow flex items-center justify-center px-4 py-16">
+        {/* Carte principale avec léger flou et ombre pour la lisibilité */}
         <div className="bg-slate-800 bg-opacity-90 backdrop-blur-md p-10 rounded-2xl shadow-2xl max-w-4xl w-full">
+          {/* Titre de la page */}
           <h1 className="text-3xl font-bold text-violet-400 mb-8">Mentions légales</h1>
 
+          {/* Éditeur du site : identité responsable de la publication */}
           <section className="mb-6">
             <h2 className="text-xl font-semibold text-white mb-2">Éditeur du site</h2>
             <p>
@@ -15,6 +24,7 @@ export default function LegalMentions() {
             </p>
           </section>
 
+          {/* Hébergement : coordonnées de l’hébergeur */}
           <section className="mb-6">
             <h2 className="text-xl font-semibold text-white mb-2">Hébergement</h2>
             <p>
@@ -24,6 +34,7 @@ export default function LegalMentions() {
             </p>
           </section>
 
+          {/* Responsabilité : rappel des bonnes pratiques côté utilisateur */}
           <section className="mb-6">
             <h2 className="text-xl font-semibold text-white mb-2">Responsabilité</h2>
             <p>
@@ -32,6 +43,7 @@ export default function LegalMentions() {
             </p>
           </section>
 
+          {/* Propriété intellectuelle : droits sur les contenus */}
           <section className="mb-6">
             <h2 className="text-xl font-semibold text-white mb-2">Propriété intellectuelle</h2>
             <p>
@@ -40,6 +52,7 @@ export default function LegalMentions() {
             </p>
           </section>
 
+          {/* Données personnelles : renvoi vers la politique de confidentialité */}
           <section className="mb-6">
             <h2 className="text-xl font-semibold text-white mb-2">Données personnelles</h2>
             <p>
@@ -48,6 +61,7 @@ export default function LegalMentions() {
             </p>
           </section>
 
+          {/* Contact : adresse e-mail de contact dédiée */}
           <section>
             <h2 className="text-xl font-semibold text-white mb-2">Contact</h2>
             <p>
@@ -56,6 +70,7 @@ export default function LegalMentions() {
           </section>
         </div>
       </main>
+      {/* Pied de page commun du site */}
       <Footer />
     </div>
   );

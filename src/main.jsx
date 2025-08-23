@@ -1,4 +1,9 @@
 /* eslint-env browser */
+/* 
+  Point d’entrée client : j’initialise le router, j’encapsule l’appli dans
+  le provider OAuth Google et je rends le tout dans #root.
+  Je garde un layout commun minimal (Header + CookieConsent + Outlet + Toaster).
+*/
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
@@ -16,15 +21,20 @@ import CookieSettings from "./components/pages/CookieSettings";
 import Sitemap from "./components/pages/Sitemap";
 import "./index.css";
 import Contact from "./components/pages/Contact";
+
 /* ------------------------------------------------------------------ */
 /*  Layout commun : Header + Outlet + Toaster                         */
 /* ------------------------------------------------------------------ */
 export function RootLayout() {
   return (
     <>
+      {/* Je place le header site-wide */}
       <Header />
+      {/* Je montre la bannière cookies tant que le consentement n’est pas stocké */}
       <CookieConsent />
+      {/* Je laisse React Router injecter la vue courante ici */}
       <Outlet />
+      {/* Toaster global pour les notifications (succès/erreur/info) */}
       <Toaster />
     </>
   );
@@ -45,6 +55,7 @@ const router = createBrowserRouter([
       { path: "/legal-mentions", element: <LegalMentions /> },
       { path: "/cookie-settings", element: <CookieSettings /> },
       { path: "/sitemap", element: <Sitemap /> },
+      // Je garde la casse telle quelle pour respecter le chemin attendu
       { path: "/Contact", element: <Contact /> },
     ],
   },
@@ -55,7 +66,9 @@ const router = createBrowserRouter([
 /* ------------------------------------------------------------------ */
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
+    {/* Je fournis l’ID client Google pour activer le flux OAuth (popup/redirect) */}
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_AUTH_CLIENT_ID}>
+      {/* Je branche le router sur l’arbre React */}
       <RouterProvider router={router} />
     </GoogleOAuthProvider>
   </React.StrictMode>

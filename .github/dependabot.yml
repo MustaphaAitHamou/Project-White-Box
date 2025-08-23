@@ -1,0 +1,9 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule: { interval: "weekly", day: "monday", time: "07:00" }
+    open-pull-requests-limit: 10
+    groups:
+      react-stack: { patterns: ["react*", "react-router-dom"] }
+      tooling:     { patterns: ["vite*", "eslint*", "jest*", "babel*", "lhci*"] }

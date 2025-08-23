@@ -1,11 +1,13 @@
-# Sécurité & Accessibilité (notes complémentaires)
+<!-- docs/SECURITY_A11Y.md -->
+
+# Sécurité & Accessibilité — notes complémentaires
 
 ## Sécurité (complément)
-- OAuth Google, jetons gérés par le SDK.
-- Variables d’environnement masquées ; rien en dur dans le dépôt.
-- Export/suppression de compte depuis l’UI (Firestore + nettoyage local).
+- Jetons OAuth gérés par le SDK Google.  
+- Secrets **jamais** embarqués dans le client.  
+- Export/suppression de compte côté UI (Firestore + nettoyage local).
 
 ## Accessibilité (complément)
-- Radix UI pour les primitives focusables (dialog, popover).
-- `aria-label` pour boutons icône, `aria-live` sur toasts importants.
-- Contrastes AA sur les couleurs principales (vérifié Lighthouse).
+- Radix UI pour les composants complexes (Dialog, Popover, Menu…).  
+- `aria-label` sur boutons icône, `aria-live` pour toasts importants.  
+- Contrastes AA vérifiés par Lighthouse ; navigation clavier validée.

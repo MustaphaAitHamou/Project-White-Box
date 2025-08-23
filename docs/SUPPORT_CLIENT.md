@@ -1,17 +1,19 @@
+<!-- docs/SUPPORT_CLIENT.md -->
+
 # Support client
 
 ## Canaux
-- Formulaire “Contact” sur le site.
-- Mail : support@tripgenius.eu
+- Formulaire “Contact” (site).
+- E-mail : **support@tripgenius.eu**
 
-## Exemple réel
-- **Contexte** : l’utilisateur ne retrouve plus son voyage.
-- **Diag** : localStorage vidé.
-- **Action** : récupération via Firestore (clé = `user.uid`).
-- **Résultat** : voyage restauré en < 24 h.
+## Exemple représentatif
+- **Problème** : voyage “disparu”.  
+- **Diag** : `localStorage` vidé.  
+- **Action** : restauration via Firestore (`uid`).  
+- **Résultat** : voyage récupéré sous 24 h.
 
 ## Processus
-1. Accusé de réception (< 48 h).
-2. Repro + diag.
-3. Correctif si bug → PR + CI.
-4. Log dans `ANOMALIES_LOG.md` et MAJ `CHANGELOG.md` si publié.
+1. Accusé de réception (< 48 h).  
+2. Repro + diagnostic.  
+3. Correctif si bug → passage CI.  
+4. Consignation dans `ANOMALIES_LOG.md` + MAJ `CHANGELOG.md` si publié.

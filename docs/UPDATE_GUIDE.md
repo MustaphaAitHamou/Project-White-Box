@@ -1,18 +1,15 @@
-# UPDATE_GUIDE.md
+<!-- docs/UPDATE_GUIDE.md -->
 
-## 🔄 Objectif
-Mettre à jour les dépendances du projet tout en garantissant sa stabilité.
+# UPDATE_GUIDE
 
----
+## 🎯 Objectif
+Mettre à jour les dépendances en préservant **stabilité** et **sécurité**.
 
-## 🗓️ Fréquence
-- **Chaque mois** : vérification des dépendances (`npm outdated`)
-- **À chaque sprint** : vérification sécurité (`npm audit`)
+## 🗓️ Cadence
+- **Hebdo (auto)** : via **Dependabot** (lundi 07:00, `timezone: "Europe/Paris"`), groupes `react-stack` et `tooling`.
+- **Mensuel (manuel)** : contrôle `npm outdated` + revue avis sécurité.
 
----
-
-## 🔧 Étapes à suivre
-
-1. **Lister les packages obsolètes**
-```bash
-npm outdated
+## 🔧 Étapes (manuel)
+1. **Lister les packages**
+   ```bash
+   npm outdated

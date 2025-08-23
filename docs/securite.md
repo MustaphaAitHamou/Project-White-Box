@@ -1,31 +1,33 @@
+<!-- docs/securite.md -->
+
 # Sécurité
 
-## Secrets et configuration
-- Clés/API uniquement dans `.env.local` (non versionné) ou variables Vercel/IglAO.
-- `.env.example` fourni pour le mapping.
+## Secrets & configuration
+- Clés/API via variables d’environnement (Vercel/GitHub), **jamais** en dur.  
+- `.env.example` documente les variables attendues.
 
-## Authentification et consentement
-- **Google OAuth** (pas de mot de passe stocké).
-- Consentement RGPD affiché avant login.
+## Authentification & consentement
+- **OAuth Google** (aucun mot de passe stocké).
+- Demande de consentement **RGPD** avant login.
 
-## Firestore (accès minimal)
-- Lecture/écriture limitées à l’utilisateur connecté (docs liés à son `uid`).
-- Pas de noms de collections/documents construits directement depuis les entrées utilisateur.
+## Firestore (moindre privilège)
+- Accès limité aux docs de l’utilisateur (`uid`).  
+- Pas de noms de docs issus directement d’entrées utilisateur.
 
-## Protection XSS / injections
-- Rendu React (escape par défaut) ; pas de `dangerouslySetInnerHTML`.
-- URLs encodées ; liens externes `rel="noopener noreferrer"`.
-- Pas de SQL ; SDK Firestore officiel (évite injections NoSQL si règles ok).
+## XSS / Injections
+- Rendu React (escape) ; pas de `dangerouslySetInnerHTML`.  
+- URLs encodées ; `rel="noopener noreferrer"` sur liens externes.  
+- SDK Firestore officiel (évite NoSQL injection si règles correctes).
 
 ## Abuse & disponibilité
-- reCAPTCHA **invisible** au login ; bypass spécifique iOS documenté.
-- Quotas activés côté APIs Google.
-- Site servi en statique (CDN/IglAO) : peu d’attaque de surface, rafales mieux absorbées.
+- reCAPTCHA **invisible** au login ; contournement iOS documenté.  
+- Quotas API côté Google.  
+- Distribution statique (CDN) → surface réduite, absorption rafales.
 
 ## Données personnelles
-- Export JSON (`Header`) côté client.
-- Suppression de compte disponible depuis l’UI.
-- Stockage minimal (trips + consentement).
+- Export JSON et suppression de compte depuis l’UI.  
+- Stockage minimal (trips + consentements).
 
 ## Suivi
-- UptimeRobot + LHCI ; revues régulières des règles Firestore et rotation des clés si besoin.
+- UptimeRobot (dispo) + **LHCI** (perf/a11y/SEO).  
+- Rotation des clés, revue règles Firestore régulière.

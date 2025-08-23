@@ -1,14 +1,18 @@
-# Supervision
+<!-- docs/SUPERVISION.md -->
+
+# Supervision & alertes
 
 ## Outils
-- **UptimeRobot** : ping HTTP(s) de l’URL publique toutes les 5 min, alertes mail/mobile.
-- **Lighthouse CI** : audit perf/a11y/SEO sur le build statique en CI.
+- **UptimeRobot** : ping HTTPS de l’URL publique toutes les **5 min**, alertes e-mail.  
+- **Lighthouse CI** : audits planifiés sur l’artefact de build (CI GitHub).
 
 ## Indicateurs cibles
-- Disponibilité > 99.9 %
-- Taux d’erreur < 1 %
-- Perf Lighthouse Desktop ≥ 90 / A11y ≥ 95
+- Disponibilité ≥ **99,5 %** / mois.  
+- Perf Lighthouse Desktop ≥ **90** ; A11y/BP ≥ **95**.
 
 ## Réaction
-- Downtime > 1 min → vérification hébergeur (IglAO) + relance.
-- Perf en baisse → analyse bundle (Vite/rollup) + lazy import des libs lourdes.
+- **2 sondes** consécutives en échec : vérifier déploiements + hébergeur, **rollback** éventuel.  
+- Perf en baisse : analyser bundle (split, lazy), images (taille/cache), Web Vitals.
+
+## Conformité
+- Traces minimales (logs CI, captures techniques), conservation courte, pas de données perso en clair.

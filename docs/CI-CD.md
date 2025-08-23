@@ -1,34 +1,29 @@
+<!-- docs/CI-CD.md -->
+
 # CI/CD – TripGenius
 
 ## Objectifs
-- Empêcher les régressions (lint, tests, perf/a11y).
-- Produire des artefacts (build, rapports) et des previews.
-- Donner de la traçabilité (Codecov, LHCI reports, tags).
+- Bloquer les régressions (lint, tests, perf/a11y).
+- Produire des artefacts (build, rapports) + previews.
+- Assurer la traçabilité (Codecov, LHCI, tags).
 
-## Pipeline GitHub Actions
-1. **Build**  
-   - `npm ci`  
-   - `npm run lint`  
-   - `npm run build` → artefact `dist/`
+## Pipeline GitHub Actions (résumé)
+1. **build**  
+   `npm ci` → `npm run lint` → `npm run build` → artefact `dist/`.
+2. **test**  
+   `npm test -- --coverage` → upload **Codecov** (`./coverage/coverage-final.json`).
+3. **package** (option)  
+   Image Docker buildée et archivée.
+4. **deploy-preprod**  
+   **Vercel** preview (commit/PR).
+5. **lighthouse**  
+   `npx @lhci/cli autorun --config=.lighthouserc.json` (sur l’artefact `dist/`).
 
-2. **Tests**  
-   - `npm test -- --coverage`  
-   - Upload **Codecov** (`./coverage/coverage-final.json`)
-
-3. **Packaging Docker** (option)
-
-4. **Preview Vercel** (preprod)
-
-5. **Lighthouse CI**  
-   - `lhci autorun --config=.lighthouserc.json`  
-   - Assert “no-pwa” preset (scores min)  
-   - Upload report (temporary storage)
-
-## Seuils recommandés
-- Lighthouse Perf ≥ 90; A11y ≥ 95; BP ≥ 95; SEO ≥ 90.
-- Couverture lignes ≥ 70 %.
+## Seuils
+- Lighthouse Desktop : Perf ≥ 90 ; A11y/BP ≥ 95 ; SEO ≥ 90.
+- Couverture : lignes ≥ 70 %.
 
 ## Conseils perf
-- `build.target: "es2020"`, `manualChunks`, dynamic imports des libs lourdes.
-- Lazy-load du composant Google Autocomplete, EmailJS, react-icons.
-- Images avec fallback, cache long sur assets statiques.
+- `build.target: "es2020"`, `manualChunks`, imports dynamiques bibliothèques lourdes.
+- Lazy-load Google Autocomplete/OAuth/reCAPTCHA ; `loading="lazy"` images.
+- Placeholders robustes + cache long sur assets statiques.

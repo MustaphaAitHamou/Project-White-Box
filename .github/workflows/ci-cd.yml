@@ -1,19 +1,14 @@
-# Je définis le nom du workflow tel qu’il apparaît dans l’onglet Actions.
 name: CI-CD Pipeline
 
 on:
-  # Je déclenche le workflow sur push et sur ouverture/mise à jour de PR vers main.
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
 
 env:
-  # Je fixe la version de Node pour garantir des builds reproductibles.
   NODE_VERSION: "20"
-  # Je précise où Vite sort le build (utile pour les artefacts et Lighthouse).
   BUILD_DIR: "dist"
-  # Je normalise la locale pour éviter des comportements différents selon l’OS.
   LC_ALL: "C.UTF-8"
 
 jobs:
@@ -23,15 +18,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4  # Je récupère le dépôt.
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }} # Je m’aligne sur NODE_VERSION défini plus haut.
-          cache: npm                            # Je tire parti du cache npm pour accélérer.
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
       - name: Install deps
-        run: npm ci  # Je fais une install propre à partir de package-lock.
+        run: npm ci
 
       # Clés factices pour que le bundle/LHCI ne crash pas
       - name: Create .env.local for build
@@ -42,65 +37,63 @@ jobs:
           VITE_GOOGLE_AUTH_CLIENT_ID=fake-client.apps.googleusercontent.com
           VITE_RECAPTCHA_SITE_KEY=fake-recaptcha
           EOF
-        # Je fournis des variables factices : le build Vite a besoin de ces clés
-        # même si, en CI, je n’appelle pas les services réels.
 
       - name: Lint & type-check
-        run: npm run lint  # Je valide le style et les types avant d’aller plus loin.
+        run: npm run lint
 
       - name: Build (Vite)
-        run: npm run build # Je génère le bundle de prod.
+        run: npm run build
 
       - name: Upload build artefact
         uses: actions/upload-artifact@v4
         with:
-          name: site-build                 # Je nomme l’artefact pour l’étape Lighthouse.
-          path: ${{ env.BUILD_DIR }}       # Je pousse le contenu de dist/ tel quel.
+          name: site-build
+          path: ${{ env.BUILD_DIR }}
 
   # ─────────────────────────────────────────────────────────────
   # 2) Tests + couverture (artefact + Codecov)
   # ─────────────────────────────────────────────────────────────
   test:
-    needs: build  # Je n’exécute les tests qu’après un build OK.
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # ✅ J’évite l’erreur Codecov et je garde l’historique pour les diffs.
+          fetch-depth: 0  # ✅ évite l'erreur Codecov "properly create commit"
 
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - run: npm ci  # Je réinstalle pour un environnement propre côté test.
+      - run: npm ci
 
       - name: Run tests (Jest + coverage)
         run: npm run test -- --coverage
         env:
-          NODE_OPTIONS: "--experimental-vm-modules" # Je débloque les imports ESM côté tests.
+          NODE_OPTIONS: "--experimental-vm-modules"
 
-      # ✅ Je garde la couverture en artefact pour l’audit et le dossier.
+      # ✅ Garde une preuve téléchargeable pour le dossier
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
           name: coverage
           path: coverage/
 
-      # ✅ J’envoie la couverture à Codecov (token utile si repo privé).
+      # ✅ Envoi (facultatif si dépôt public, sinon TOKEN requis)
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           files: coverage/coverage-final.json
           token: ${{ secrets.CODECOV_TOKEN }} # inutile si repo public
           flags: unittests
-          fail_ci_if_error: true # Je veux que la CI échoue si l’upload échoue.
+          fail_ci_if_error: true
 
   # ─────────────────────────────────────────────────────────────
   # 3) Packaging Docker (optionnel)
   # ─────────────────────────────────────────────────────────────
   package:
-    needs: test  # Je ne package qu’après des tests OK.
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -109,8 +102,6 @@ jobs:
         run: |
           docker build -t tripgenius:${{ github.sha }} .
           docker image save tripgenius:${{ github.sha }} | gzip > image.tar.gz
-        # Je construis une image taggée par le SHA et je l’exporte en tar.gz
-        # pour pouvoir l’attacher en artefact (utile pour debug/déploiements manuels).
 
       - uses: actions/upload-artifact@v4
         with:
@@ -121,7 +112,7 @@ jobs:
   # 4) Déploiement Vercel (Preview)
   # ─────────────────────────────────────────────────────────────
   deploy-preprod:
-    needs: package   # Je déploie en preview après build/test/package OK.
+    needs: package
     runs-on: ubuntu-latest
     environment: preview
     steps:
@@ -132,15 +123,14 @@ jobs:
           npm i -g vercel
           vercel --token ${{ secrets.VERCEL_TOKEN }} --prod=false --confirm --yes
         env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}         # Je fournis l’org Vercel.
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }} # Je cible le bon projet.
-        # Je déclenche un déploiement “preview” (non prod) pour valider avant merge.
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
   # ─────────────────────────────────────────────────────────────
   # 5) Lighthouse CI sur le build statique
   # ─────────────────────────────────────────────────────────────
   lighthouse:
-    needs: test  # Je n’analyse les perfs qu’après les tests unitaires.
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -153,12 +143,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: site-build
-          path: ${{ env.BUILD_DIR }}  # Je récupère le build généré plus tôt.
+          path: ${{ env.BUILD_DIR }}
 
       - name: Run Lighthouse CI
         run: npx -y @lhci/cli@latest autorun --config=.lighthouserc.json --verbose
         env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }} # Je publie les résultats sur la PR.
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
       - name: Upload LHCI report
         uses: actions/upload-artifact@v4
@@ -166,4 +156,4 @@ jobs:
           name: lighthouse-report
           path: .lighthouseci
           if-no-files-found: warn
-          retention-days: 7  # Je garde les rapports une semaine pour consultation.
+          retention-days: 7

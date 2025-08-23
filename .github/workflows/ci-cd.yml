@@ -3,30 +3,23 @@ name: CI-CD Pipeline
 on:
   push:
     branches: [ main ]
-    tags: [ 'v*.*.*' ]        # ex: v0.2.1 pour ta capture "ref: refs/tags/v0.2.1"
-  schedule:
-    - cron: '0 6 * * 1'       # LHCI planifié (lundi 06:00 UTC)
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  pull_request:
+    branches: [ main ]
 
 env:
-  NODE_VERSION: '20'
-  BUILD_DIR: 'dist'
-  LC_ALL: 'C.UTF-8'
+  NODE_VERSION: "20"
+  BUILD_DIR: "dist"
+  LC_ALL: "C.UTF-8"
 
 jobs:
+  # ─────────────────────────────────────────────────────────────
   # 1) Build + lint
+  # ─────────────────────────────────────────────────────────────
   build:
-    if: ${{ github.event_name != 'schedule' }}   # on saute pour le cron dédié LHCI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -35,32 +28,32 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      # clés factices pour que le build/LHCI ne plante pas
+      # Clés factices pour que le bundle/LHCI ne crash pas
       - name: Create .env.local for build
         run: |
-          cat > .env.local <<'EOF'
+          cat > .env.local << 'EOF'
           VITE_GOOGLE_PLACE_API_KEY=fake-place-key
           VITE_GOOGLE_GEMINI_AI_API_KEY=fake-gemini-key
           VITE_GOOGLE_AUTH_CLIENT_ID=fake-client.apps.googleusercontent.com
           VITE_RECAPTCHA_SITE_KEY=fake-recaptcha
           EOF
 
-      - name: Lint
-        run: npm run lint || echo "lint warnings ignored"
+      - name: Lint & type-check
+        run: npm run lint
 
       - name: Build (Vite)
         run: npm run build
 
-      - name: Upload build artifact
+      - name: Upload build artefact
         uses: actions/upload-artifact@v4
         with:
           name: site-build
           path: ${{ env.BUILD_DIR }}
-          retention-days: 7
 
-  # 2) Tests + couverture (Codecov si token présent)
+  # ─────────────────────────────────────────────────────────────
+  # 2) Tests + couverture Codecov
+  # ─────────────────────────────────────────────────────────────
   test:
-    if: ${{ github.event_name != 'schedule' }}
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -71,24 +64,57 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Run tests (Jest) + coverage
-        run: npm run test -- --coverage --passWithNoTests
+      - name: Run tests
+        run: npm run test -- --coverage
         env:
           NODE_OPTIONS: "--experimental-vm-modules"
 
-      - name: Upload coverage to Codecov (skip if no token)
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        run: |
-          if [ -n "$CODECOV_TOKEN" ]; then
-            npx codecov -t "$CODECOV_TOKEN" -f ./coverage/coverage-final.json
-          else
-            echo "Skipping Codecov: CODECOV_TOKEN not set."
-          fi
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/coverage-final.json
+          flags: unittests
+          fail_ci_if_error: true
 
-  # 3) Lighthouse CI sur l'artefact (push/tag)
+  # ─────────────────────────────────────────────────────────────
+  # 3) Packaging Docker (optionnel)
+  # ─────────────────────────────────────────────────────────────
+  package:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: |
+          docker build -t tripgenius:${{ github.sha }} .
+          docker image save tripgenius:${{ github.sha }} | gzip > image.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar.gz
+
+  # ─────────────────────────────────────────────────────────────
+  # 4) Déploiement Vercel (preview)
+  # ─────────────────────────────────────────────────────────────
+  deploy-preprod:
+    needs: package
+    runs-on: ubuntu-latest
+    environment: preview
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Vercel (Preview)
+        run: |
+          npm install -g vercel
+          vercel --token ${{ secrets.VERCEL_TOKEN }} --prod=false --confirm --yes
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  # ─────────────────────────────────────────────────────────────
+  # 5) Lighthouse CI sur le build statique
+  # ─────────────────────────────────────────────────────────────
   lighthouse:
-    if: ${{ github.event_name != 'schedule' }}
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -97,14 +123,16 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Download build artifact
+      - name: Download build artefact
         uses: actions/download-artifact@v4
         with:
           name: site-build
           path: ${{ env.BUILD_DIR }}
 
       - name: Run Lighthouse CI
-        run: npx -y @lhci/cli@latest autorun --upload.target=filesystem --collect.staticDistDir=${{ env.BUILD_DIR }} --verbose
+        run: npx -y @lhci/cli@latest autorun --config=.lighthouserc.json --verbose
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
       - name: Upload LHCI report
         uses: actions/upload-artifact@v4
@@ -113,79 +141,3 @@ jobs:
           path: .lighthouseci
           if-no-files-found: warn
           retention-days: 7
-
-  # 4) Déploiement Preview Vercel (seulement sur main, secrets optionnels)
-  deploy-preprod:
-    if: ${{ github.event_name != 'schedule' && startsWith(github.ref, 'refs/heads/main') }}
-    needs: lighthouse
-    runs-on: ubuntu-latest
-    environment: preview
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Vercel (Preview) if secrets present
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
-            npm i -g vercel
-            vercel --token "$VERCEL_TOKEN" --prod=false --confirm --yes
-          else
-            echo "Skipping Vercel preview: missing secrets."
-          fi
-
-  # 5) LHCI planifié (cron) — build + audit autonome (icône "clock")
-  lighthouse-scheduled:
-    if: ${{ github.event_name == 'schedule' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - run: npm ci
-
-      - name: Create .env.local for build (cron)
-        run: |
-          cat > .env.local <<'EOF'
-          VITE_GOOGLE_PLACE_API_KEY=fake-place-key
-          VITE_GOOGLE_GEMINI_AI_API_KEY=fake-gemini-key
-          VITE_GOOGLE_AUTH_CLIENT_ID=fake-client.apps.googleusercontent.com
-          VITE_RECAPTCHA_SITE_KEY=fake-recaptcha
-          EOF
-
-      - name: Build (Vite)
-        run: npm run build
-
-      - name: Run Lighthouse CI (cron)
-        run: npx -y @lhci/cli@latest autorun --upload.target=filesystem --collect.staticDistDir=${{ env.BUILD_DIR }}
-
-      - name: Upload LHCI report (cron)
-        uses: actions/upload-artifact@v4
-        with:
-          name: lighthouse-report-scheduled
-          path: .lighthouseci
-          retention-days: 7
-
-  # 6) Déploiement Production Vercel sur tag (secrets optionnels)
-  deploy-prod:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: lighthouse
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Vercel (Production) if secrets present
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
-            npm i -g vercel
-            vercel --token "$VERCEL_TOKEN" --prod --confirm --yes
-          else
-            echo "Skipping Vercel production deploy: missing secrets."
-          fi

@@ -1,13 +1,9 @@
-// Pied de page global : je rassemble les liens utiles du site et j’affiche l’année dynamique.
-// Je ne touche pas à la structure ni au style ; j’explique simplement chaque partie.
 import React from 'react';
 import { Link } from 'react-router-dom';
 
 export default function Footer() {
   return (
     <footer className="bg-slate-950 text-white py-6 px-4 text-center space-y-3">
-      {/* Groupe de liens : je privilégie <Link> pour la navigation interne côté client.
-         Pour le lien externe, je garde target="_blank" + rel="noopener noreferrer" pour la sécurité. */}
       <div className="space-x-4">
         <Link to="/privacy-policy" className="text-violet-400 hover:underline">Confidentialité</Link>
         <Link to="/cookie-settings" className="text-violet-400 hover:underline">Cookies</Link>
@@ -23,8 +19,6 @@ export default function Footer() {
           ☕ Buy me a coffee
         </a>
       </div>
-
-      {/* Mention légale : j’insère l’année courante à l’exécution pour éviter une mise à jour manuelle. */}
       <p className="text-sm text-gray-400 mt-2">
         © {new Date().getFullYear()} TripGenius. Tous droits réservés.
       </p>

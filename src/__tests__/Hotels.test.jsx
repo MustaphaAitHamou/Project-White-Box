@@ -1,18 +1,8 @@
 /* eslint-env jest */
-/**
- * Tests du module Hotels.
- * Je mocke l’enfant <HotelCardItem> pour isoler le rendu de la liste et
- * je vérifie deux cas : avec options et sans options.
- */
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 
-/**
- * Je remplace le composant enfant par un stub léger :
- * - je lui donne un displayName pour des logs plus clairs
- * - je déclare des propTypes pour garder une vérification basique des props
- * - je n’affiche que le nom de l’hôtel dans un div testable
- */
+// Mock du composant enfant avec displayName + propTypes pour calmer eslint
 jest.mock('~/view-trip/components/HotelCardItem', () => {
   const React = require('react');
   const PropTypes = require('prop-types');
@@ -32,14 +22,12 @@ jest.mock('~/view-trip/components/HotelCardItem', () => {
   return { __esModule: true, default: MockHotelCardItem };
 });
 
-// J’importe le module après avoir posé le mock ci-dessus.
+// Import après le mock
 import * as HotelsMod from '~/view-trip/components/Hotels';
 const Hotels = HotelsMod.default || HotelsMod.Hotels;
 
-// Je remets les mocks/espions à zéro après chaque test.
 afterEach(() => jest.clearAllMocks());
 
-// Jeu de données minimal pour le “happy path”.
 const TRIP_OK = {
   TripData: {
     hotelOptions: [
@@ -51,7 +39,6 @@ const TRIP_OK = {
 };
 
 test("affiche une liste d'hôtels quand il y a des options", () => {
-  // Je rends la section et je récupère les items mockés.
   render(<Hotels trip={TRIP_OK} />);
   const items = screen.getAllByTestId('hotel-item');
   expect(items).toHaveLength(2);
@@ -60,7 +47,6 @@ test("affiche une liste d'hôtels quand il y a des options", () => {
 });
 
 test("n'affiche rien s'il n'y a pas d'options", () => {
-  // Je vérifie le comportement “silent” : le composant retourne null.
   const tripEmpty = {
     TripData: { hotelOptions: [] },
     userSelection: { location: { label: 'Paris, France' } },

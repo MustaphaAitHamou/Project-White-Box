@@ -1,7 +1,4 @@
 /* eslint-env browser, node */
-
-// Je fournis ici un mock générique pour les imports de fichiers (images, PDF…)
-// afin de simplifier les tests : je remplace l’input par un simple bouton.
 import React from 'react';
 import PropTypes from 'prop-types';
 
@@ -14,7 +11,6 @@ import PropTypes from 'prop-types';
  * @param {object}   props.value    – valeur arbitraire renvoyée
  */
 export default function FileMock({ onChange = () => {}, value = {} }) {
-  // Je renvoie un bouton minimaliste : pratique pour les snapshots et les sélecteurs.
   return (
     <button
       type="button"
@@ -27,17 +23,13 @@ export default function FileMock({ onChange = () => {}, value = {} }) {
         background   : '#f5f5f5',
         cursor       : 'pointer',
       }}
-      // Je simule un “event” proche d’un onChange DOM : { target: { value } }.
-      // Ça me permet d’intégrer ce mock sans changer la logique des composants.
       onClick={() => onChange({ target: { value } })}
     >
-      {/* Je montre un label si présent, sinon un libellé par défaut. */}
-      {value?.label ?? 'file-mock'}
+      {value?.label ?? 'file‑mock'}
     </button>
   );
 }
 
-// Je garde un typage léger pour clarifier l’API en test.
 FileMock.propTypes = {
   onChange: PropTypes.func,
   value   : PropTypes.shape({ label: PropTypes.string }),

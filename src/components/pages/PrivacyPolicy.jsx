@@ -1,26 +1,16 @@
-// Page statique de politique de confidentialité.
-// Je garde une structure simple : un conteneur pleine hauteur, un panneau central lisible
-// et aucun traitement côté client (contenu purement informatif).
-
 import React from 'react';
 import Footer from '~/view-trip/components/Footer';
 
 export default function PrivacyPolicy() {
   return (
-    // Je structure la page en colonne : contenu centré et footer collé en bas.
     <div className="min-h-screen flex flex-col bg-slate-900 text-white">
       <main className="flex-grow flex items-center justify-center px-4 py-16">
-        {/* Carte centrale avec fond assombri et flou pour la lisibilité */}
         <div className="bg-slate-800 bg-opacity-90 backdrop-blur-md p-10 rounded-2xl shadow-2xl max-w-4xl w-full">
-          {/* Titre principal */}
           <h1 className="text-3xl font-bold text-violet-400 mb-8">Politique de confidentialité</h1>
-
-          {/* Introduction concise */}
           <p className="mb-6">
             Chez <strong>TripGenius</strong>, nous accordons une grande importance à la protection de vos données personnelles.
           </p>
 
-          {/* Sections claires et numérotées pour la lisibilité */}
           <h2 className="text-xl font-semibold text-white mt-8 mb-2">1. Données collectées</h2>
           <ul className="list-disc list-inside space-y-1">
             <li>Connexion Google (nom, email, photo)</li>
@@ -38,7 +28,6 @@ export default function PrivacyPolicy() {
           <p>Conformément au RGPD, vous pouvez demander l’accès, la modification ou la suppression de vos données.</p>
         </div>
       </main>
-      {/* Pied de page réutilisable */}
       <Footer />
     </div>
   );

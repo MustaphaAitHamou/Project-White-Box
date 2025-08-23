@@ -1,39 +1,29 @@
 # .github/workflows/automerge.yml
-# Je configure ici l’auto-merge des PRs ouvertes par Dependabot,
-# en évitant les mises à jour majeures (semver major) par prudence.
-
 name: Dependabot automerge
 
 on:
-  # Je déclenche le workflow à l’ouverture/modif/réouverture d’une PR,
-  # ainsi qu’au passage en "ready for review".
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
-  # Je donne juste ce qu’il faut pour fusionner automatiquement.
   contents: write
   pull-requests: write
 
 jobs:
   enable:
-    # Je ne cible que les PRs créées par le bot Dependabot.
     if: github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Dependabot metadata
         id: meta
-        # Je récupère les métadonnées (ex: type de mise à jour) de la PR.
         uses: dependabot/fetch-metadata@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Je saute les mises à jour majeures ; le reste peut être auto-merge.
-      # (Si un jour j’accepte les majors, je pourrai retirer la condition ci-dessous.)
+      # Skip majors; everything else can be auto-merged
       - name: Enable GitHub auto-merge
         if: steps.meta.outputs.update-type != 'version-update:semver-major'
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          # Je choisis "squash" pour garder un historique propre côté main.
           merge-method: squash

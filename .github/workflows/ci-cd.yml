@@ -1,3 +1,4 @@
+# Je définis le nom du workflow tel qu’il apparaît dans l’onglet Actions.
 name: CI-CD Pipeline
 
 on:
@@ -27,12 +28,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }} # Je m’aligne sur NODE_VERSION défini plus haut.
-          cache: npm                            # J’active le cache npm pour accélérer.
+          cache: npm                            # Je tire parti du cache npm pour accélérer.
 
       - name: Install deps
-        run: npm ci  # J’installe proprement à partir de package-lock.
+        run: npm ci  # Je fais une install propre à partir de package-lock.
 
-      # Clés factices pour que le bundle/LHCI ne plante pas
+      # Clés factices pour que le bundle/LHCI ne crash pas
       - name: Create .env.local for build
         run: |
           cat > .env.local << 'EOF'
@@ -41,14 +42,14 @@ jobs:
           VITE_GOOGLE_AUTH_CLIENT_ID=fake-client.apps.googleusercontent.com
           VITE_RECAPTCHA_SITE_KEY=fake-recaptcha
           EOF
-        # Je fournis des variables factices : le build Vite attend ces clés
+        # Je fournis des variables factices : le build Vite a besoin de ces clés
         # même si, en CI, je n’appelle pas les services réels.
 
       - name: Lint & type-check
-        run: npm run lint  # Je vérifie le lint et les types avant d’aller plus loin.
+        run: npm run lint  # Je valide le style et les types avant d’aller plus loin.
 
       - name: Build (Vite)
-        run: npm run build # Je génère le bundle de production.
+        run: npm run build # Je génère le bundle de prod.
 
       - name: Upload build artefact
         uses: actions/upload-artifact@v4
@@ -60,44 +61,46 @@ jobs:
   # 2) Tests + couverture (artefact + Codecov)
   # ─────────────────────────────────────────────────────────────
   test:
-    needs: build  # Je n’exécute les tests qu’après un build concluant.
+    needs: build  # Je n’exécute les tests qu’après un build OK.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Je garde l’historique complet pour éviter les erreurs Codecov.
+          fetch-depth: 0  # ✅ J’évite l’erreur Codecov et je garde l’historique pour les diffs.
 
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - run: npm ci  # Je réinstalle pour un environnement de test propre.
+      - run: npm ci  # Je réinstalle pour un environnement propre côté test.
 
       - name: Run tests (Jest + coverage)
         run: npm run test -- --coverage
         env:
           NODE_OPTIONS: "--experimental-vm-modules" # Je débloque les imports ESM côté tests.
 
+      # ✅ Je garde la couverture en artefact pour l’audit et le dossier.
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
           name: coverage
-          path: coverage/  # Je conserve un artefact consultable pour le dossier.
+          path: coverage/
 
+      # ✅ J’envoie la couverture à Codecov (token utile si repo privé).
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           files: coverage/coverage-final.json
-          token: ${{ secrets.CODECOV_TOKEN }} # Nécessaire si le dépôt est privé.
+          token: ${{ secrets.CODECOV_TOKEN }} # inutile si repo public
           flags: unittests
-          fail_ci_if_error: true
+          fail_ci_if_error: true # Je veux que la CI échoue si l’upload échoue.
 
   # ─────────────────────────────────────────────────────────────
   # 3) Packaging Docker (optionnel)
   # ─────────────────────────────────────────────────────────────
   package:
-    needs: test  # Je ne package qu’après des tests réussis.
+    needs: test  # Je ne package qu’après des tests OK.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -106,8 +109,8 @@ jobs:
         run: |
           docker build -t tripgenius:${{ github.sha }} .
           docker image save tripgenius:${{ github.sha }} | gzip > image.tar.gz
-        # Je construis une image taguée par le SHA et je l’exporte en tar.gz
-        # pour pouvoir l’attacher en artefact (pratique pour debug ou déploiements manuels).
+        # Je construis une image taggée par le SHA et je l’exporte en tar.gz
+        # pour pouvoir l’attacher en artefact (utile pour debug/déploiements manuels).
 
       - uses: actions/upload-artifact@v4
         with:
@@ -118,7 +121,7 @@ jobs:
   # 4) Déploiement Vercel (Preview)
   # ─────────────────────────────────────────────────────────────
   deploy-preprod:
-    needs: package   # Je déploie en preview après build/test/package réussis.
+    needs: package   # Je déploie en preview après build/test/package OK.
     runs-on: ubuntu-latest
     environment: preview
     steps:
@@ -129,15 +132,15 @@ jobs:
           npm i -g vercel
           vercel --token ${{ secrets.VERCEL_TOKEN }} --prod=false --confirm --yes
         env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}         # Je fournis l’organisation Vercel.
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}         # Je fournis l’org Vercel.
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }} # Je cible le bon projet.
-        # Je déclenche un déploiement preview (non prod) pour valider avant merge.
+        # Je déclenche un déploiement “preview” (non prod) pour valider avant merge.
 
   # ─────────────────────────────────────────────────────────────
   # 5) Lighthouse CI sur le build statique
   # ─────────────────────────────────────────────────────────────
   lighthouse:
-    needs: test  # J’analyse les performances après les tests unitaires.
+    needs: test  # Je n’analyse les perfs qu’après les tests unitaires.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -163,4 +166,4 @@ jobs:
           name: lighthouse-report
           path: .lighthouseci
           if-no-files-found: warn
-          retention-days: 7  # Je conserve les rapports une semaine pour consultation.
+          retention-days: 7  # Je garde les rapports une semaine pour consultation.

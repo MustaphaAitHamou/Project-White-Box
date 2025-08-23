@@ -44,9 +44,7 @@ import ReCAPTCHA from "react-google-recaptcha";
 /*  utils                                                               */
 /* ------------------------------------------------------------------ */
 
-/** Déclenche un téléchargement (client‐side, sans lib externe)
- *  Je transforme l’objet en Blob JSON, je crée une URL temporaire,
- *  puis je clique un <a download> injecté dynamiquement. */
+/** Déclenche un téléchargement (client‐side, sans lib externe) */
 function downloadJSON(obj, filename = "tripgenius-data.json") {
   const blob = new Blob([JSON.stringify(obj, null, 2)], {
     type: "application/json",
@@ -65,17 +63,13 @@ function downloadJSON(obj, filename = "tripgenius-data.json") {
 /*  config                                                             */
 /* ------------------------------------------------------------------ */
 
-// Je détecte iOS pour forcer ux_mode=redirect (popup souvent bloqué).
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-
-// Je lis la clé reCAPTCHA injectée côté client via window.__ENV__.
-// En tests, j’attends que __ENV__ soit fourni par un mock.
+// Jest n'accepte pas import.meta.env → on lit d'abord process.env (Jest),
+// puis éventuellement une variable globale injectée au runtime.
 const RECAPTCHA_KEY =
   typeof window !== "undefined" && window.__ENV__?.VITE_RECAPTCHA_SITE_KEY
     ? window.__ENV__.VITE_RECAPTCHA_SITE_KEY
     : "";
-
-// Je n’active reCAPTCHA que si j’ai une clé et que je ne suis pas sur iOS.
 const useRecaptcha = Boolean(RECAPTCHA_KEY) && !isIOS;
 
 /* ------------------------------------------------------------------ */
@@ -84,7 +78,6 @@ const useRecaptcha = Boolean(RECAPTCHA_KEY) && !isIOS;
 
 export default function Header() {
   /* ---------- état utilisateur ---------- */
-  // Au premier rendu, je tente de restaurer l’utilisateur depuis localStorage.
   const [user, setUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("user") || "null");
@@ -94,12 +87,6 @@ export default function Header() {
   });
 
   /* ---------- autres états ---------- */
-  // showLogin: ouvre/ferme la modale d’auth
-  // showDelete: ouvre/ferme la modale de suppression du compte
-  // confirmEmail: champ de confirmation avant suppression Firestore
-  // agree: consentement RGPD obligatoire avant déclenchement du login
-  // error: message d’erreur local pour la modale d’auth
-  // exporting: état de chargement pendant l’export JSON
   const [showLogin, setShowLogin] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState("");
@@ -107,15 +94,11 @@ export default function Header() {
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
 
-  // Je garde une ref sur le widget reCAPTCHA (mode invisible).
   const recaptchaRef = useRef(null);
 
   /* ----------------------------------------------------------------
-     synchro cross-tab
+     synchro cross‑tab
   ---------------------------------------------------------------- */
-  // Je synchronise le state user entre onglets/fenêtres via:
-  // - l’événement "storage" (localStorage modifié)
-  // - un événement custom "userChanged" que je déclenche après login/logout
   useEffect(() => {
     const syncUser = () => {
       try {
@@ -135,9 +118,6 @@ export default function Header() {
   /* ----------------------------------------------------------------
      OAuth Google
   ---------------------------------------------------------------- */
-  // Je prépare le handler de login Google.
-  // - onSuccess: je récupère le profil via l’access_token et je persiste l’utilisateur
-  // - ux_mode: popup sauf sur iOS où je force la redirection
   const login = useGoogleLogin({
     onSuccess: handleProfile,
     onError: () => toast.error("Échec de l’authentification Google"),
@@ -146,8 +126,6 @@ export default function Header() {
     redirect_uri: window.location.origin + "/",
   });
 
-  // Je récupère le profil Google avec l’access_token, je persiste dans localStorage
-  // puis je ferme la modale et je notifie via l’événement "userChanged".
   async function handleProfile({ access_token }) {
     try {
       const { data } = await axios.get(
@@ -165,7 +143,6 @@ export default function Header() {
   /* ----------------------------------------------------------------
      reCAPTCHA
   ---------------------------------------------------------------- */
-  // reCAPTCHA invisible: une fois validé, j’enchaîne le login Google.
   const onRecaptchaDone = (token) => {
     if (!token) {
       toast.error("Échec reCAPTCHA, réessayez.");
@@ -175,8 +152,6 @@ export default function Header() {
     login();
   };
 
-  // Je refuse de continuer si le consentement n’est pas coché,
-  // sinon je déclenche reCAPTCHA (si activé) ou le login directement.
   const handleContinue = () => {
     if (!agree) {
       setError("Vous devez accepter la collecte de données.");
@@ -189,8 +164,6 @@ export default function Header() {
   /* ----------------------------------------------------------------
      logout + suppression compte
   ---------------------------------------------------------------- */
-  // Je nettoie la session: révoque côté Google, purge localStorage,
-  // puis je notifie les autres onglets.
   const logout = () => {
     googleLogout();
     localStorage.removeItem("user");
@@ -198,14 +171,10 @@ export default function Header() {
     setUser(null);
   };
 
-  // Je supprime toutes les données Firestore liées à l’utilisateur:
-  // - tous ses documents AITrips
-  // - son document de consentement
-  // puis je déconnecte l’utilisateur.
   const deleteAccount = async () => {
     if (!user) return;
     if (confirmEmail !== user.email) {
-      toast.error("E-mail incorrect.");
+      toast.error("E‑mail incorrect.");
       return;
     }
     try {
@@ -228,9 +197,6 @@ export default function Header() {
   /* ----------------------------------------------------------------
      export JSON complet
   ---------------------------------------------------------------- */
-  // Je récupère tous les voyages de l’utilisateur puis je déclenche
-  // un téléchargement JSON côté navigateur. Je gère un état de chargement
-  // et j’affiche des toasts en cas de succès/absence d’éléments/erreur.
   const exportData = async () => {
     if (!user) return;
     setExporting(true);
@@ -247,7 +213,7 @@ export default function Header() {
         toast.info("Aucun voyage à exporter.");
       } else {
         downloadJSON({ user, trips }, "tripgenius-data.json");
-        toast.success("Export JSON téléchargé.");
+        toast.success("Export JSON téléchargé !");
       }
     } catch (err) {
       console.error(err);
@@ -261,16 +227,13 @@ export default function Header() {
   return (
     <>
       {/* ------------------ Navbar ------------------ */}
-      {/* Je garde la barre fixe avec un blur pour la lisibilité sur fonds variés. */}
       <header className="fixed top-0 z-50 w-full backdrop-blur-md shadow bg-transparent">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-          {/* Logo + titre du site */}
           <a href="/" className="flex items-center space-x-2">
             <img src="/logo.svg" alt="Logo" className="h-8" />
             <span className="text-xl font-bold text-white">TripGenius</span>
           </a>
 
-          {/* Navigation principale */}
           <nav className="flex flex-col items-start gap-4 md:flex-row md:items-center md:gap-6">
             <a href="/create-trip" className="text-white hover:text-indigo-200">
               Planifier
@@ -284,7 +247,6 @@ export default function Header() {
 
           {/* --------- zone droite --------- */}
           {user ? (
-            // Menu utilisateur avec avatar (Popover)
             <Popover>
               <PopoverTrigger asChild>
                 <img
@@ -297,7 +259,6 @@ export default function Header() {
                 align="end"
                 className="w-56 rounded-lg p-2 shadow-lg bg-white"
               >
-                {/* Déconnexion */}
                 <Button
                   onClick={logout}
                   variant="ghost"
@@ -307,7 +268,6 @@ export default function Header() {
                   <FaSignOutAlt className="mr-2" /> Se déconnecter
                 </Button>
 
-                {/* Export JSON complet */}
                 <Button
                   onClick={exportData}
                   variant="ghost"
@@ -323,7 +283,6 @@ export default function Header() {
                   Télécharger mes données
                 </Button>
 
-                {/* Suppression du compte (ouvre une modale de confirmation) */}
                 <Button
                   onClick={() => setShowDelete(true)}
                   variant="solid"
@@ -335,7 +294,6 @@ export default function Header() {
               </PopoverContent>
             </Popover>
           ) : (
-            // Bouton de connexion si aucun utilisateur en session
             <Button
               onClick={() => setShowLogin(true)}
               variant="gradient"
@@ -348,7 +306,6 @@ export default function Header() {
       </header>
 
       {/* ---------------- Dialog Login ---------------- */}
-      {/* Je présente une modale avec consentement RGPD, bouton Google et reCAPTCHA invisible. */}
       <Dialog open={showLogin} onOpenChange={setShowLogin}>
         <DialogOverlay />
         <DialogContent>
@@ -358,7 +315,7 @@ export default function Header() {
               Connexion Google
             </DialogTitle>
             <DialogDescription className="text-center text-gray-600">
-              Authentifiez-vous pour commencer votre aventure.
+              Authentifiez‑vous pour commencer votre aventure.
             </DialogDescription>
           </DialogHeader>
 
@@ -401,7 +358,7 @@ export default function Header() {
               sitekey={RECAPTCHA_KEY}
               onChange={onRecaptchaDone}
               onErrored={() => {
-                toast.error("reCAPTCHA hors-service, connexion directe.");
+                toast.error("reCAPTCHA hors‑service, connexion directe.");
                 login();
               }}
             />
@@ -420,7 +377,6 @@ export default function Header() {
       </Dialog>
 
       {/* -------------- Dialog suppression -------------- */}
-      {/* Je demande une confirmation d’e-mail avant d’effacer toutes les données. */}
       <Dialog open={showDelete} onOpenChange={setShowDelete}>
         <DialogOverlay />
         <DialogContent className="max-w-md">
@@ -429,7 +385,7 @@ export default function Header() {
               Suppression du compte
             </DialogTitle>
             <DialogDescription className="text-center mb-4">
-              Saisis ton e-mail pour confirmer :
+              Saisis ton e‑mail pour confirmer :
             </DialogDescription>
           </DialogHeader>
 

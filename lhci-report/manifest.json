@@ -1,0 +1,14 @@
+[
+  {
+    "url": "http://localhost:4173/",
+    "isRepresentativeRun": true,
+    "htmlPath": "C:\\Users\\Mosmos\\ProjetM2\\TravelAI\\lhci-report\\localhost--2025_08_22_22_31_18.report.html",
+    "jsonPath": "C:\\Users\\Mosmos\\ProjetM2\\TravelAI\\lhci-report\\localhost--2025_08_22_22_31_18.report.json",
+    "summary": {
+      "performance": 0.98,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 1
+    }
+  }
+]
